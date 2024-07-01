@@ -5,11 +5,108 @@ import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection
 from maxatac.utilities.genome_tools import load_bigwig, chromosome_blacklist_mask
 from sklearn import metrics
-from sklearn.metrics import precision_recall_curve
+from sklearn.metrics import precision_recall_curve, r2_score
 from scipy import stats
+froms scipy.stats import pearsonr, spearmanr
 from maxatac.utilities.system_tools import remove_tags
 import pybedtools
 
+class calculate_R2_pearson_spearman(object):
+    """
+    Calculate the R2, Pearson, and Spearman Correlation for Quantitative Predictions
+    :param prediction_bw: The input prediction bigwig file
+    :param gold_standard_bw: The input gold standard file
+    :param chromosome: The chromosome to limit the analysis to
+    :param results_location: The location to write the results to
+    :param blacklist_bw: The blacklist mask that is used to remove bins overlapping blacklist regions
+
+    :return: Writes a TSV for the P/R curve
+    """
+
+    def __init__(self,
+                 prediction_bw,
+                 gold_standard_bw,
+                 chromosome,
+                 results_location,
+                 blacklist_bw
+                 ):
+
+        """
+        Initialize all input values as part of the Class
+        """
+        self.prediction_stream = load_bigwig(prediction_bw)
+        self.goldstandard_stream = load_bigwig(gold_standard_bw)
+        self.chromosome = chromosome
+        self.chromosome_length = self.prediction_stream.chroms(self.chromosome) #TODO: why is this the length of the prediction stream instead of gs stream?
+        self.results_location = results_location
+
+        self.blacklist_mask = chromosome_blacklist_mask(blacklist_bw,
+                                                        self.chromosome,
+                                                        self.chromosome_length,
+                                                        bin_size=1
+                                                        )
+
+        # Call on the def in the class object to do the calculations
+        self.__import_prediction_array__()
+        self.__import_goldstandard_array__()
+        self.__R2_Sp_P__()
+
+    def __import_prediction_array__(self):
+        """
+        Import the chromosome signal from the predictions bigwig file and convert to a numpy array.
+        """
+        logging.info("Import Predictions Array")
+
+        # Get the bin stats from the prediction array
+
+        self.prediction_array = np.nan_to_num(self.prediction_stream.values(self.chromosome,
+                                                                            0,
+                                                                            self.chromosome_length
+                                                                            )
+                                              )
+
+    def __import_goldstandard_array__(self):
+        """
+        Import the chromosome signal from the gold standard bigwig file and convert to a numpy array.
+        """
+
+        logging.info("Import Gold Standard Array")
+        # prediction_chromosome_data = np.round(prediction_chromosome_data, round_predictions)
+
+        # Get the bin stats from the gold standard array
+
+        self.goldstandard_array = np.nan_to_num(self.goldstandard_stream.values(self.chromosome,
+                                                                                0,
+                                                                                self.chromosome_length
+                                                                                )
+                                                )
+
+    def __R2_Sp_P__(self):
+        """
+        Calculate the R2, Pearson, and Spearman Correlation for Quantitative Predictions
+        """
+        logging.info("Calculate R2")
+        R2_score = r2_score(
+            self.goldstandard_array[self.blacklist_mask],
+            self.prediction_array[self.blacklist_mask]
+            )
+
+        logging.info("Calculate Pearson Correlation")
+        pearson_score, pearson_pval = pearsonr(
+            self.goldstandard_array[self.blacklist_mask],
+            self.prediction_array[self.blacklist_mask]
+            )
+
+        logging.info("Calculate Spearman Correlation")
+        spearman_score, spearman_pval = spearmanr(
+            self.goldstandard_array[self.blacklist_mask],
+            self.prediction_array[self.blacklist_mask]
+            )
+
+        R2_Sp_P_df = pd.DataFrame([[R2_score, pearson_score, pearson_pval, spearman_score, spearman_pval]],
+                                  columns=['R2', 'pearson', 'pearson_pval', 'spearman', 'spearman_pval'])
+
+        R2_Sp_P_df.to_csv(self.results_location, sep='\t', index=None)
 
 class ChromosomeAUPRC(object):
     """

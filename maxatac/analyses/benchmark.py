@@ -5,7 +5,8 @@ from maxatac.utilities.system_tools import get_dir, Mute
 
 with Mute():
     from maxatac.utilities.genome_tools import chromosome_blacklist_mask
-    from maxatac.utilities.benchmarking_tools import ChromosomeAUPRC
+    from maxatac.utilities.benchmarking_tools import calculate_R2_pearson_spearman, ChromosomeAUPRC
+
 
 
 def run_benchmarking(args):
@@ -36,9 +37,6 @@ def run_benchmarking(args):
     # Create the output directory
     output_dir = get_dir(args.output_directory)
 
-    # Build the results filename
-    results_filename2 = os.path.join(output_dir, args.prefix + "_" + "r2_spearman_spearman.tsv")
-
     logging.info(
         "Benchmarking" +
         "\n  Prediction file:" + args.prediction +
@@ -54,6 +52,8 @@ def run_benchmarking(args):
         # Build the results filename
         results_filename = os.path.join(output_dir,
                                         args.prefix + "_" + chromosome + "_" + str(args.bin_size) + "bp_PRC.tsv")
+        results_filename2 = os.path.join(output_dir,
+                                        args.prefix + "_" + chromosome + "_" + str(args.bin_size) + "r2_spearman_spearman.tsv")
 
         ChromosomeAUPRC(args.prediction,
                         args.gold_standard,
@@ -64,6 +64,14 @@ def run_benchmarking(args):
                         results_filename,
                         args.round_predictions,
                         plot=args.skip_plot)
+
+        if args.quant:
+            calculate_R2_pearson_spearman(args.prediction,
+                                          args.gold_standard,
+                                          chromosome,
+                                          results_filename2,
+                                          args.blacklist_bw
+                                          )
 
     # Measure End Time of Training
     stopTime = timeit.default_timer()
