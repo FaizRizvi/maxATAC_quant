@@ -40,6 +40,7 @@ class MaxATACModel(object):
                  dense=False,
                  target_scale_factor=TRAIN_SCALE_SIGNAL,
                  output_activation="sigmoid",
+                 quant=False,
                  interpret=False,
                  interpret_cell_type=""
                  ):
@@ -52,7 +53,9 @@ class MaxATACModel(object):
         :param prefix: Prefix to use for filename
         :param threads: Number of threads to use
         :param meta_path: Path to the meta file associated with the run
+        :param quant: Whether to perform quantitative predictions
         :param output_activation: The activation function to use in the output layer
+        :param target_scale_factor: The scale factor to use for quantitative data
         :param dense: Whether to use a dense layer on output
         :param weights: Input weights to use for model
         :param interpret: Boolean for whether this is training or interpretation
@@ -70,6 +73,7 @@ class MaxATACModel(object):
         self.output_activation = output_activation
         self.dense = dense
         self.weights = weights
+        self.quant = quant
         self.target_scale_factor = target_scale_factor
 
         # Set the random seed for the model
@@ -100,6 +104,7 @@ class MaxATACModel(object):
         # Get the neural network model based on the specified model architecture
         if self.arch == "DCNN_V2":
             return get_dilated_cnn(output_activation=self.output_activation,
+                                   quant=self.quant,
                                    target_scale_factor=self.target_scale_factor,
                                    dense_b=self.dense,
                                    weights=self.weights
@@ -115,11 +120,13 @@ def DataGenerator(
         cell_type_list,
         rand_ratio,
         chroms,
+        quant=False,
         bp_resolution=BP_RESOLUTION,
         target_scale_factor=1,
         batch_size=BATCH_SIZE,
         shuffle_cell_type=False,
-        rev_comp_train=False
+        rev_comp_train=False,
+        chrom_sizes=False
 
 ):
     """
@@ -140,6 +147,8 @@ def DataGenerator(
     :param roi_pool: The pool of regions to use centered on peaks
     :param cell_type_list: The training cell lines to use
     :param rand_ratio: The number of random examples to use per batch
+    :param quant: Whether to use quantitative predictions
+    :param target_scale_factor: Scaling factor to use for scaling target values (quantitative specific)
     :param chroms: The training chromosomes
     :param bp_resolution: The resolution of the predictions to use
     :param batch_size: The number of examples to use per batch of training
@@ -158,7 +167,8 @@ def DataGenerator(
     if n_rand > 0:
         # Generate the training random regions pool
         # TODO: Check this instance of args in line 161, needed or not? training worked with it.
-        train_random_regions_pool = RandomRegionsPool(chroms=build_chrom_sizes_dict(chroms, args.DEFAULT_CHROM_SIZES),
+        # self.chromosome_sizes_dictionary = build_chrom_sizes_dict(self.chroms, self.chrom_sizes)
+        train_random_regions_pool = RandomRegionsPool(chroms=build_chrom_sizes_dict(chroms, chrom_sizes), #args.DEFAULT_CHROM_SIZES
                                                     chrom_pool_size=CHR_POOL_SIZE,
                                                     region_length=INPUT_LENGTH,
                                                     preferences=False  # can be None
@@ -171,6 +181,7 @@ def DataGenerator(
                                        n_rand=n_rand,
                                        regions_pool=train_random_regions_pool,
                                        bp_resolution=bp_resolution,
+                                       quant_train=quant,
                                        target_scale_factor=target_scale_factor,
                                        rev_comp_train=rev_comp_train
                                        )
@@ -182,6 +193,7 @@ def DataGenerator(
                                n_roi=n_roi,
                                cell_type_list=cell_type_list,
                                bp_resolution=bp_resolution,
+                               quant_train=quant,
                                target_scale_factor=target_scale_factor,
                                shuffle_cell_type=shuffle_cell_type,
                                rev_comp_train=rev_comp_train
@@ -265,6 +277,7 @@ def get_target_matrix(binding_stream,
                       start,
                       end,
                       rev_comp,
+                      quant,
                       bp_resolution):
     # Some bigwig files do not have signal for some chromosomes because they do not have peaks
     # in those regions
@@ -290,9 +303,13 @@ def get_target_matrix(binding_stream,
     # Split the data up into 32 x 32 bp bins.
     split_targets = np.array(np.split(target_vector, n_bins, axis=0))
 
-    # TODO we might want to test what happens if we change the
-    bin_sums = np.sum(split_targets, axis=1)
-    bin_vector = np.where(bin_sums > 0.5 * bp_resolution, 1.0, 0.0)
+    if quant:
+        bin_vector = np.mean(split_targets, axis=1)  # Perhaps we can change np.mean to np.median.
+
+    else:
+        # TODO we might want to test what happens if we change the
+        bin_sums = np.sum(split_targets, axis=1)
+        bin_vector = np.where(bin_sums > 0.5 * bp_resolution, 1.0, 0.0)
 
     return bin_vector
 
@@ -303,6 +320,7 @@ def create_roi_batch(sequence,
                      n_roi,
                      cell_type_list,
                      bp_resolution=1,
+                     quant_train=False,
                      target_scale_factor=1,
                      shuffle_cell_type=False,
                      rev_comp_train=False
@@ -381,17 +399,40 @@ def create_roi_batch(sequence,
                 # Append the sample to the inputs batch.
                 inputs_batch.append(input_matrix)
 
-                # Get the target matrix of values
-                target_matrix = get_target_matrix(binding_stream=binding_stream,
-                                                  chromosome=chrom_name,
-                                                  start=start,
-                                                  end=end,
-                                                  rev_comp=rev_comp,
-                                                  bp_resolution=bp_resolution)
+                if quant_train:
+                    quant = True
 
-                # Append the sample to the target batch
-                targets_batch.append(target_matrix)
+                    # Get the target matrix of values
+                    target_matrix = get_target_matrix(binding_stream=binding_stream,
+                                                      chromosome=chrom_name,
+                                                      start=start,  # suspected typo was seq_start
+                                                      end=end,  # suspected typo was seq_end
+                                                      rev_comp=rev_comp,
+                                                      quant=quant,
+                                                      bp_resolution=bp_resolution)
 
+                    # Append the sample to the target batch
+                    targets_batch.append(target_matrix)
+
+
+                else:
+                    quant = False
+
+                    # Get the target matrix of values
+                    target_matrix = get_target_matrix(binding_stream=binding_stream,
+                                                      chromosome=chrom_name,
+                                                      start=start, #suspected typo was seq_start
+                                                      end=end, #suspected typo was seq_end
+                                                      rev_comp=rev_comp,
+                                                      quant=quant,
+                                                      bp_resolution=bp_resolution)
+
+                    # Append the sample to the target batch
+                    targets_batch.append(target_matrix)
+
+        if quant_train:
+            targets_batch = np.array(targets_batch)
+            targets_batch = targets_batch * target_scale_factor
         yield np.array(inputs_batch), np.array(targets_batch)  # change to yield
 
 
@@ -402,6 +443,7 @@ def create_random_batch(
         n_rand,
         regions_pool,
         bp_resolution=1,
+        quant_train=False,
         target_scale_factor=1,
         rev_comp_train=False
 ):
@@ -445,16 +487,40 @@ def create_random_batch(
 
                 inputs_batch.append(input_matrix)
 
-                # Get the target matrix of values
-                target_matrix = get_target_matrix(binding_stream=binding_stream,
-                                                  chromosome=chrom_name,
-                                                  start=seq_start,
-                                                  end=seq_end,
-                                                  rev_comp=rev_comp,
-                                                  bp_resolution=bp_resolution)
+                if quant_train:
+                    quant = True
 
-                # Append the sample to the target batch
-                targets_batch.append(target_matrix)
+                    # Get the target matrix of values
+                    target_matrix = get_target_matrix(binding_stream=binding_stream,
+                                                      chromosome=chrom_name,
+                                                      start=seq_start,
+                                                      end=seq_end,
+                                                      rev_comp=rev_comp,
+                                                      quant=quant,
+                                                      bp_resolution=bp_resolution)
+
+                    # Append the sample to the target batch
+                    targets_batch.append(target_matrix)
+
+
+                else:
+                    quant = False
+
+                    # Get the target matrix of values
+                    target_matrix = get_target_matrix(binding_stream=binding_stream,
+                                                      chromosome=chrom_name,
+                                                      start=seq_start,
+                                                      end=seq_end,
+                                                      rev_comp=rev_comp,
+                                                      quant=quant,
+                                                      bp_resolution=bp_resolution)
+
+                    # Append the sample to the target batch
+                    targets_batch.append(target_matrix)
+
+        if quant_train:
+            targets_batch = np.array(targets_batch)
+            targets_batch = targets_batch * target_scale_factor
 
         yield np.array(inputs_batch), np.array(targets_batch)  # change to yield
 
@@ -792,14 +858,17 @@ class SeqDataGenerator(tf.keras.utils.Sequence):
         return next(self.generator)
 
 
-def model_selection(training_history, output_dir):
+def model_selection(training_history, output_dir, quant):
     """
     This function will take the training history and output the best model based on the dice coefficient value.
     """
     # Create a dataframe from the history object
     df = pd.DataFrame(training_history.history)
 
-    epoch = df['val_dice_coef'].idxmax() + 1
+    if quant:
+        epoch = df['val_pearson'].idxmax() + 1 # TODO: try other methods to select best epoch.
+    else:
+        epoch = df['val_dice_coef'].idxmax() + 1
 
     # Get the realpath to the best model
     out = pd.DataFrame([glob.glob(output_dir + "/*" + str(epoch) + ".h5")], columns=['Best_Model_Path'])

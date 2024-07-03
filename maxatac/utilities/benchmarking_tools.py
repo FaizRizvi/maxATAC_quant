@@ -7,7 +7,7 @@ from maxatac.utilities.genome_tools import load_bigwig, chromosome_blacklist_mas
 from sklearn import metrics
 from sklearn.metrics import precision_recall_curve, r2_score
 from scipy import stats
-froms scipy.stats import pearsonr, spearmanr
+from scipy.stats import pearsonr, spearmanr
 from maxatac.utilities.system_tools import remove_tags
 import pybedtools
 

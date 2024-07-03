@@ -217,6 +217,13 @@ def get_parser():
                        help="Trained maxATAC model .h5 file."
                        )
 
+    predict_parser.add_argument("--quant",
+                                dest="quant",
+                                action='store_true',
+                                default=False,
+                                help="This argument should be set to true to build models based on quantitative data"
+                                )
+
     predict_parser.add_argument("--seq", "--sequence",
                                 dest="sequence",
                                 type=str,
@@ -342,6 +349,21 @@ def get_parser():
     train_parser.set_defaults(func=run_training)
 
     # Add arguments to the parser
+    train_parser.add_argument("--quant",
+                              dest="quant",
+                              action='store_true',
+                              default=False,
+                              help="This argument should be set to true to build models based on quantitative data"
+                              )
+
+    train_parser.add_argument("--target_scale_factor",
+                              dest="target_scale_factor",
+                              type=float,
+                              required=False,
+                              default=1,
+                              help="Scaling factor for scaling model targets. Use only for Quant models"
+                              )
+
     train_parser.add_argument("--genome",
                               dest="genome",
                               type=str,
@@ -694,6 +716,13 @@ def get_parser():
                                   type=str,
                                   required=True,
                                   help="Gold Standard file"
+                                  )
+
+    benchmark_parser.add_argument("--quant",
+                                  dest="quant",
+                                  action='store_true',
+                                  default=False,
+                                  help="This argument should be set to true for models based on quantitative data"
                                   )
 
     benchmark_parser.add_argument("-c", "--chroms", "--chromosomes",
@@ -1152,7 +1181,7 @@ def parse_arguments(argsl, cwd_abs_path=None):
                 "chroms", "keep", "epochs", "batches", "max_queue_size",
                 "prefix", "plot", "lrate", "decay", "bin",
                 "minimum", "test_cell_lines", "rand_ratio",
-                "train_tf", "arch", "batch_size", "save_roi",
+                "train_tf", "arch", "quant","batch_size", "save_roi",
                 "val_batch_size", "target_scale_factor", "blacklist", "chrom_sizes",
                 "output_activation", "dense", "shuffle_cell_type", "rev_comp", "genome"
             ],
