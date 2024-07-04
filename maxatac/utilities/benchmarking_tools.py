@@ -25,8 +25,9 @@ class calculate_R2_pearson_spearman(object):
 
     def __init__(self,
                  prediction_bw,
-                 gold_standard_bw,
+                 goldstandard_bw,
                  chromosome,
+                 bin_size,
                  results_location,
                  blacklist_bw
                  ):
@@ -34,16 +35,21 @@ class calculate_R2_pearson_spearman(object):
         """
         Initialize all input values as part of the Class
         """
-        self.prediction_stream = load_bigwig(prediction_bw)
-        self.goldstandard_stream = load_bigwig(gold_standard_bw)
-        self.chromosome = chromosome
-        self.chromosome_length = self.prediction_stream.chroms(self.chromosome) #TODO: why is this the length of the prediction stream instead of gs stream?
         self.results_location = results_location
+
+        self.prediction_stream = load_bigwig(prediction_bw)
+        self.goldstandard_stream = load_bigwig(goldstandard_bw)
+
+        self.chromosome = chromosome
+        self.chromosome_length = self.goldstandard_stream.chroms(self.chromosome)
+
+        self.bin_count = int(int(self.chromosome_length) / int(bin_size))  # need to floor the number
+        self.bin_size = bin_size
 
         self.blacklist_mask = chromosome_blacklist_mask(blacklist_bw,
                                                         self.chromosome,
                                                         self.chromosome_length,
-                                                        bin_size=1
+                                                        self.chromosome_length #self.bin_count #nBins= bin_size
                                                         )
 
         # Call on the def in the class object to do the calculations

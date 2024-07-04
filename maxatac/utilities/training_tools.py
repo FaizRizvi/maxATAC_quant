@@ -167,8 +167,7 @@ def DataGenerator(
     if n_rand > 0:
         # Generate the training random regions pool
         # TODO: Check this instance of args in line 161, needed or not? training worked with it.
-        # self.chromosome_sizes_dictionary = build_chrom_sizes_dict(self.chroms, self.chrom_sizes)
-        train_random_regions_pool = RandomRegionsPool(chroms=build_chrom_sizes_dict(chroms, chrom_sizes), #args.DEFAULT_CHROM_SIZES
+        train_random_regions_pool = RandomRegionsPool(chroms=build_chrom_sizes_dict(chroms, chrom_sizes),
                                                     chrom_pool_size=CHR_POOL_SIZE,
                                                     region_length=INPUT_LENGTH,
                                                     preferences=False  # can be None

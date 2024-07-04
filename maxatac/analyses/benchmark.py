@@ -69,6 +69,7 @@ def run_benchmarking(args):
             calculate_R2_pearson_spearman(args.prediction,
                                           args.gold_standard,
                                           chromosome,
+                                          args.bin_size,
                                           results_filename2,
                                           args.blacklist_bw
                                           )
