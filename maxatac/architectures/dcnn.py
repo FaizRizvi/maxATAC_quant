@@ -277,8 +277,8 @@ def get_dilated_cnn(
         output_layer = Dense(output_length, activation=output_activation, kernel_initializer='glorot_uniform')(
             output_layer)
 
-    if quant and output_activation in ["sigmoid"]:
-        output_layer = Lambda(lambda x: x * target_scale_factor, name='Target_Scale_Layer')(output_layer)
+#    if quant and output_activation in ["sigmoid"]:
+#        output_layer = Lambda(lambda x: x * target_scale_factor, name='Target_Scale_Layer')(output_layer)
 
 
     logging.debug("Added outputs layer: " + "\n - " + str(output_layer))

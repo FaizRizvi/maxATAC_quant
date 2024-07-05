@@ -277,7 +277,8 @@ def get_target_matrix(binding_stream,
                       end,
                       rev_comp,
                       quant,
-                      bp_resolution):
+                      bp_resolution,
+                      target_scale_factor):
     # Some bigwig files do not have signal for some chromosomes because they do not have peaks
     # in those regions
     # Our workaround for issue#42 is to provide a zero matrix for that position
@@ -304,6 +305,7 @@ def get_target_matrix(binding_stream,
 
     if quant:
         bin_vector = np.mean(split_targets, axis=1)  # Perhaps we can change np.mean to np.median.
+        bin_vector = bin_vector * target_scale_factor
 
     else:
         # TODO we might want to test what happens if we change the
@@ -400,6 +402,7 @@ def create_roi_batch(sequence,
 
                 if quant_train:
                     quant = True
+                    scale_factor = target_scale_factor
 
                     # Get the target matrix of values
                     target_matrix = get_target_matrix(binding_stream=binding_stream,
@@ -408,7 +411,8 @@ def create_roi_batch(sequence,
                                                       end=end,  # suspected typo was seq_end
                                                       rev_comp=rev_comp,
                                                       quant=quant,
-                                                      bp_resolution=bp_resolution)
+                                                      bp_resolution=bp_resolution,
+                                                      target_scale_factor=scale_factor)
 
                     # Append the sample to the target batch
                     targets_batch.append(target_matrix)
@@ -416,6 +420,7 @@ def create_roi_batch(sequence,
 
                 else:
                     quant = False
+                    scale_factor = target_scale_factor
 
                     # Get the target matrix of values
                     target_matrix = get_target_matrix(binding_stream=binding_stream,
@@ -424,7 +429,8 @@ def create_roi_batch(sequence,
                                                       end=end, #suspected typo was seq_end
                                                       rev_comp=rev_comp,
                                                       quant=quant,
-                                                      bp_resolution=bp_resolution)
+                                                      bp_resolution=bp_resolution,
+                                                      target_scale_factor=scale_factor)
 
                     # Append the sample to the target batch
                     targets_batch.append(target_matrix)
@@ -488,6 +494,7 @@ def create_random_batch(
 
                 if quant_train:
                     quant = True
+                    scale_factor = target_scale_factor
 
                     # Get the target matrix of values
                     target_matrix = get_target_matrix(binding_stream=binding_stream,
@@ -496,7 +503,8 @@ def create_random_batch(
                                                       end=seq_end,
                                                       rev_comp=rev_comp,
                                                       quant=quant,
-                                                      bp_resolution=bp_resolution)
+                                                      bp_resolution=bp_resolution,
+                                                      target_scale_factor=scale_factor)
 
                     # Append the sample to the target batch
                     targets_batch.append(target_matrix)
@@ -504,6 +512,7 @@ def create_random_batch(
 
                 else:
                     quant = False
+                    scale_factor = target_scale_factor
 
                     # Get the target matrix of values
                     target_matrix = get_target_matrix(binding_stream=binding_stream,
@@ -512,7 +521,8 @@ def create_random_batch(
                                                       end=seq_end,
                                                       rev_comp=rev_comp,
                                                       quant=quant,
-                                                      bp_resolution=bp_resolution)
+                                                      bp_resolution=bp_resolution,
+                                                      target_scale_factor=scale_factor)
 
                     # Append the sample to the target batch
                     targets_batch.append(target_matrix)
