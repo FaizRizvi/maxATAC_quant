@@ -435,9 +435,10 @@ def create_roi_batch(sequence,
                     # Append the sample to the target batch
                     targets_batch.append(target_matrix)
 
-        if quant_train:
-            targets_batch = np.array(targets_batch)
-            targets_batch = targets_batch * target_scale_factor
+#        if quant_train:
+#            targets_batch = np.array(targets_batch)
+#            targets_batch = targets_batch * target_scale_factor
+
         yield np.array(inputs_batch), np.array(targets_batch)  # change to yield
 
 
@@ -527,9 +528,9 @@ def create_random_batch(
                     # Append the sample to the target batch
                     targets_batch.append(target_matrix)
 
-        if quant_train:
-            targets_batch = np.array(targets_batch)
-            targets_batch = targets_batch * target_scale_factor
+#        if quant_train:
+#            targets_batch = np.array(targets_batch)
+#            targets_batch = targets_batch * target_scale_factor
 
         yield np.array(inputs_batch), np.array(targets_batch)  # change to yield
 

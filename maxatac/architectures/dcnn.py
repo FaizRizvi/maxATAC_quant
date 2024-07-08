@@ -283,6 +283,9 @@ def get_dilated_cnn(
 
     logging.debug("Added outputs layer: " + "\n - " + str(output_layer))
 
+    #logging.debug("Output Activation Function used: " + "\n - " + str(output_activation))
+    print(output_activation)
+
     # Model
     model = Model(inputs=[input_layer], outputs=[output_layer])
 
@@ -309,8 +312,10 @@ def get_dilated_cnn(
                 decay=adam_decay
             ),
             loss=mse,
-            metrics=[mse, coeff_determination, tf.keras.metrics.Precision(), tf.keras.metrics.Recall(), pearson,
-                     spearman]  # tf.keras.metrics.RootMeanSquaredError()
+            metrics=[mse, coeff_determination, pearson, spearman]  
+            # tf.keras.metrics.RootMeanSquaredError(), tf.keras.metrics.Precision(), tf.keras.metrics.Recall(),
+            # Can not use Precision and Recall metrics with quant models and a softplus activation since values will
+            # go greater than 1, will kick back an error
         )
 
     logging.debug("Model compiled")

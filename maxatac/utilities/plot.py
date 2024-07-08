@@ -157,7 +157,7 @@ def export_loss_mse_coeff(history, tf, TCL, RR, ARC, file_location, suffix="_mod
     ax4.set_xlabel("Epoch")
     ax4.legend(["Training", "Validation"], loc="upper left")
 
-    t_y = history.history['precision']
+    '''t_y = history.history['precision']
     t_x = [int(i) for i in range(1, len(t_y) + 1)]
 
     v_y = history.history["val_precision"]
@@ -191,6 +191,7 @@ def export_loss_mse_coeff(history, tf, TCL, RR, ARC, file_location, suffix="_mod
     ax6.set_xlabel("Epoch")
     ax6.legend(["Training", "Validation"], loc="upper left")
     #
+    '''
     t_y = history.history['pearson']
     t_x = [int(i) for i in range(1, len(t_y) + 1)]
 
