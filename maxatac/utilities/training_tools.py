@@ -42,7 +42,8 @@ class MaxATACModel(object):
                  output_activation="sigmoid",
                  quant=False,
                  interpret=False,
-                 interpret_cell_type=""
+                 interpret_cell_type="",
+                 loss="cross_entropy"
                  ):
         """
         Initialize the maxATAC model with the input parameters and architecture
@@ -75,6 +76,7 @@ class MaxATACModel(object):
         self.weights = weights
         self.quant = quant
         self.target_scale_factor = target_scale_factor
+        self.loss = loss
 
         # Set the random seed for the model
         random.seed(seed)
@@ -107,7 +109,8 @@ class MaxATACModel(object):
                                    quant=self.quant,
                                    target_scale_factor=self.target_scale_factor,
                                    dense_b=self.dense,
-                                   weights=self.weights
+                                   weights=self.weights,
+                                   loss=self.loss
                                    )
         else:
             sys.exit("Model Architecture not specified correctly. Please check")
@@ -879,6 +882,32 @@ def model_selection(training_history, output_dir, quant):
         epoch = df['val_pearson'].idxmax() + 1 # TODO: try other methods to select best epoch.
     else:
         epoch = df['val_dice_coef'].idxmax() + 1
+
+    def model_selection_v2(training_history, output_dir):
+        """
+        This function will take the training history and output the best model based on the dice coefficient value.
+        """
+        # Create a dataframe from the history object
+        df = pd.DataFrame(training_history.history)
+
+        df["train_val_loss_diff_abs"] = [abs(x) for x in df["val_loss"] - df["loss"]]
+        df["train_val_loss_maximum"] = [
+            max(x, y) for x, y in zip(df["val_loss"], df["loss"])
+        ]
+        df["train_val_loss_diff_abs_ratio"] = (
+                df["train_val_loss_diff_abs"] / df["train_val_loss_maximum"]
+        )
+        val_loss_min_idx = df["val_loss"].idxmin()
+        epoch = df.iloc[val_loss_min_idx:]["train_val_loss_diff_abs_ratio"].idxmin() + 1
+
+        # Get the realpath to the best model
+        best_model = [glob.glob(output_dir + "/*" + str(epoch) + ".h5")[0]]
+        out = pd.DataFrame([best_model], columns=["Best_Model_Path"])
+
+        # Write the location of the best model to a file
+        out.to_csv(output_dir + "/" + "best_epoch.txt", sep="\t", index=None, header=None)
+
+        return epoch
 
     # Get the realpath to the best model
     out = pd.DataFrame([glob.glob(output_dir + "/*" + str(epoch) + ".h5")], columns=['Best_Model_Path'])

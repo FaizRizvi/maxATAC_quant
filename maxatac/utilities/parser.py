@@ -356,6 +356,13 @@ def get_parser():
                               help="This argument should be set to true to build models based on quantitative data"
                               )
 
+    train_parser.add_argument("--loss",
+                              dest="loss",
+                              type=str,
+                              default="cross_entropy",
+                              help="This argument should be set depending on binary models or quantitative models (cross entropy, mse)"
+                              )
+
     train_parser.add_argument("--target_scale_factor",
                               dest="target_scale_factor",
                               type=float,
@@ -1183,7 +1190,7 @@ def parse_arguments(argsl, cwd_abs_path=None):
                 "minimum", "test_cell_lines", "rand_ratio",
                 "train_tf", "arch", "quant","batch_size", "save_roi",
                 "val_batch_size", "target_scale_factor", "blacklist", "chrom_sizes",
-                "output_activation", "dense", "shuffle_cell_type", "rev_comp", "genome"
+                "output_activation", "dense", "shuffle_cell_type", "rev_comp", "genome", "loss"
             ],
             cwd_abs_path
         )

@@ -2,7 +2,6 @@ import logging
 from scipy import stats
 from maxatac.utilities.system_tools import Mute
 
-
 with Mute():
     import tensorflow as tf
     from tensorflow.keras import backend as K
@@ -23,27 +22,8 @@ with Mute():
     from maxatac.utilities.constants import KERNEL_INITIALIZER, INPUT_LENGTH, INPUT_CHANNELS, INPUT_FILTERS, \
         INPUT_KERNEL_SIZE, INPUT_ACTIVATION, OUTPUT_FILTERS, OUTPUT_KERNEL_SIZE, FILTERS_SCALING_FACTOR, DILATION_RATE, \
         OUTPUT_LENGTH, CONV_BLOCKS, PADDING, POOL_SIZE, ADAM_BETA_1, ADAM_BETA_2, DEFAULT_ADAM_LEARNING_RATE, \
-        DEFAULT_ADAM_DECAY
+        DEFAULT_ADAM_DECAY, LOSS
 
-
-def loss_function(
-        y_true,
-        y_pred,
-        y_pred_min=0.0000001,  # 1e-7
-        y_pred_max=0.9999999,  # 1 - 1e-7
-        y_true_min=-0.5
-):
-    y_true = K.flatten(y_true)
-    y_pred = tf.clip_by_value(
-        K.flatten(y_pred),
-        y_pred_min,
-        y_pred_max
-    )
-    losses = tf.boolean_mask(
-        tensor=-y_true * K.log(y_pred) - (1 - y_true) * K.log(1 - y_pred),
-        mask=K.greater_equal(y_true, y_true_min)
-    )
-    return tf.reduce_mean(input_tensor=losses)
 
 def pearson(y_true, y_pred):
     import scipy.stats as measures
@@ -61,10 +41,6 @@ def pearson(y_true, y_pred):
     
     score = r_num / r_den
     return score
-'''
-def pearson(y_true, y_pred):
-    return (tf.contrib.metrics.streaming_pearson_correlation(y_pred, y_true))
-'''
 
 def spearman(y_true, y_pred):
     from scipy.stats import spearmanr
@@ -208,7 +184,8 @@ def get_dilated_cnn(
         quant=False,
         target_scale_factor=1,
         dense_b=False,
-        weights=None
+        weights=None,
+        loss=LOSS
 ):
     """
     If weights are provided they will be loaded into created model
@@ -283,13 +260,23 @@ def get_dilated_cnn(
 
     logging.debug("Added outputs layer: " + "\n - " + str(output_layer))
 
-    #logging.debug("Output Activation Function used: " + "\n - " + str(output_activation))
-    print(output_activation)
+    logging.info("Output Activation Function used: " + "\n - " + str(output_activation))
 
     # Model
     model = Model(inputs=[input_layer], outputs=[output_layer])
 
     if not quant:
+        # Selecting the Loss Function
+        if loss == "cross_entropy":
+            from maxatac.utilities.losses import cross_entropy
+            loss_function = cross_entropy()
+            logging.info("You have selected to use the following Loss Function: " + "\n - " + str(loss))
+
+        else:
+            logging.info("No loss function selected, selecting default loss function of cross entropy")
+
+        '''from maxatac.utilities.losses import cross_entropy
+        loss_function = cross_entropy()'''
 
         model.compile(
             optimizer=Adam(
@@ -302,8 +289,21 @@ def get_dilated_cnn(
             metrics=[dice_coef]
         )
     else:
-        mse = tf.keras.losses.MeanSquaredError(reduction="auto",
-                                               name="mean_squared_error")  # May want to change Reduction methods possibly
+        # Selecting the Loss Function
+        if loss == "mse":
+            from maxatac.utilities.losses import mse
+
+            loss_function = mse()
+            logging.info("You have selected to use the following Loss Function: " + "\n - " + str(loss))
+
+        else:
+            logging.info("No loss function selected, selecting default loss function of cross entropy")
+
+
+    # add if statement for corresponding loss functions
+        '''from maxatac.utilities.losses import mse
+        loss_function = mse()'''
+
         model.compile(
             optimizer=Adam(
                 lr=adam_learning_rate,
@@ -311,8 +311,8 @@ def get_dilated_cnn(
                 beta_2=adam_beta_2,
                 decay=adam_decay
             ),
-            loss=mse,
-            metrics=[mse, coeff_determination, pearson, spearman]  
+            loss=loss_function,
+            metrics=[loss_function, coeff_determination, pearson, spearman] #mse
             # tf.keras.metrics.RootMeanSquaredError(), tf.keras.metrics.Precision(), tf.keras.metrics.Recall(),
             # Can not use Precision and Recall metrics with quant models and a softplus activation since values will
             # go greater than 1, will kick back an error

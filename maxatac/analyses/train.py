@@ -80,7 +80,8 @@ def run_training(args):
                                  output_activation=args.output_activation,
                                  target_scale_factor=args.target_scale_factor,
                                  dense=args.dense,
-                                 weights=args.weights
+                                 weights=args.weights,
+                                 loss=args.loss
                                  )
 
     logging.info("Import training regions")
@@ -204,9 +205,13 @@ def run_training(args):
     logging.info("Plot and save results")
 
     # Select best model
-    best_epoch = model_selection(training_history=training_history,
+'''    best_epoch = model_selection(training_history=training_history,
                                  output_dir=maxatac_model.output_directory,
-                                 quant=args.quant)
+                                 quant=args.quant)'''
+
+    best_epoch = model_selection_v2(training_history=training_history,
+                                 output_dir=maxatac_model.output_directory
+                                 )
 
     # If plot then plot the model structure and training metrics
     if args.plot:

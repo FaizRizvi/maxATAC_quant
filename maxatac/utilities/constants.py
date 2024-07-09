@@ -116,3 +116,4 @@ QUANT_TARGET_SCALE_FACTOR = 10
 
 INPUT_CHANNELS = 5
 TRAIN_MONITOR = "val_loss"
+LOSS = "cross_entropy"
