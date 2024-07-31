@@ -270,13 +270,11 @@ def get_dilated_cnn(
         if loss == "cross_entropy":
             from maxatac.utilities.losses import cross_entropy
             loss_function = cross_entropy()
-            logging.info("You have selected to use the following Loss Function: " + "\n - " + str(loss))
 
         else:
             logging.info("No loss function selected, selecting default loss function of cross entropy")
 
-        '''from maxatac.utilities.losses import cross_entropy
-        loss_function = cross_entropy()'''
+        logging.info("You have selected to use the following Loss Function: " + "\n - " + str(loss))
 
         model.compile(
             optimizer=Adam(
@@ -292,17 +290,47 @@ def get_dilated_cnn(
         # Selecting the Loss Function
         if loss == "mse":
             from maxatac.utilities.losses import mse
-
             loss_function = mse()
-            logging.info("You have selected to use the following Loss Function: " + "\n - " + str(loss))
 
+        elif loss == "pearsonr_mse":
+            from maxatac.utilities.losses import pearsonr_mse
+            loss_function = pearsonr_mse()
+
+        elif loss == "pearsonr_poisson":
+            from maxatac.utilities.losses import pearsonr_poisson
+            loss_function = pearsonr_poisson()
+
+        elif loss == "poisson":
+            from maxatac.utilities.losses import poisson
+            loss_function = poisson()
+
+        elif loss == "multinomialnll":
+            from maxatac.utilities.losses import multinomialnll
+            loss_function = multinomialnll()
+
+        elif loss == "multinomialnll_mse":
+            from maxatac.utilities.losses import multinomialnll_mse
+            loss_function = multinomialnll_mse()
+
+        elif loss == "multinomialnll_mse_reg":
+            from maxatac.utilities.losses import multinomialnll_mse_reg
+            loss_function = multinomialnll_mse_reg()
+
+        elif loss == "basenjipearsonr":
+            from maxatac.utilities.losses import basenjipearsonr
+            loss_function = basenjipearsonr()
+
+        elif loss == "r2":
+            from maxatac.utilities.losses import r2
+            loss_function = r2()
         else:
-            logging.info("No loss function selected, selecting default loss function of cross entropy")
+            from maxatac.utilities.losses import mse
+            loss = "mse"
+            loss_function = mse()
+            logging.info("No loss function selected, selecting default quantitative loss function of MSE")
 
 
-    # add if statement for corresponding loss functions
-        '''from maxatac.utilities.losses import mse
-        loss_function = mse()'''
+        logging.info("You have selected to use the following Loss Function: " + "\n - " + str(loss))
 
         model.compile(
             optimizer=Adam(

@@ -1,7 +1,7 @@
 
 from maxatac.utilities.system_tools import Mute
 import tensorflow as tf
-#import tensorflow_probability as tfp
+import tensorflow_probability as tfp
 
 
 with Mute():
@@ -57,8 +57,6 @@ class cross_entropy(tf.keras.losses.Loss):
         self.y_pred_min = 0.0000001,  # 1e-7
         self.y_pred_max = 0.9999999,  # 1 - 1e-7
         self.y_true_min = -0.5
-
-        #self.__calculate_loss__()
 
     def call(self, y_true, y_pred):
         """
@@ -131,13 +129,22 @@ class mse(tf.keras.losses.Loss):
         super().__init__(name=name)
 
     def call(self, y_true, y_pred):
+        print("y_true")
+        print(y_true)
+        print("y_pred")
+        print(y_pred)
+        print(tf.keras.losses.MSE(y_true,y_pred))
         return tf.keras.losses.MSE(y_true,y_pred)
 
-'''class multinomialnll(tf.keras.losses.Loss):
+class multinomialnll(tf.keras.losses.Loss):
     def __init__(self, name="multinomial", **kwargs):
         super().__init__(name=name)
 
     def call(self, y_true, y_pred):
+        print("y_true")
+        print(y_true)
+        print("y_pred")
+        print(y_pred)
         logits_perm = tf.transpose(y_pred, (0, 2, 1))
         true_counts_perm = tf.transpose(y_true, (0, 2, 1))
         counts_per_example = tf.reduce_sum(true_counts_perm, axis=-1)
@@ -145,9 +152,9 @@ class mse(tf.keras.losses.Loss):
                                                 logits=logits_perm)
         # get the sequence length for normalization
         seqlen = tf.cast(tf.shape(y_true)[0],dtype=tf.float32)
-        return -tf.reduce_sum(dist.log_prob(true_counts_perm)) / seqlen'''
+        return -tf.reduce_sum(dist.log_prob(true_counts_perm)) / seqlen
 
-'''class multinomialnll_mse(tf.keras.losses.Loss):
+class multinomialnll_mse(tf.keras.losses.Loss):
     def __init__(self, name="multinomial_mse", **kwargs):
         super().__init__(name=name)
         self.alpha=kwargs.get('alpha')
@@ -168,7 +175,7 @@ class mse(tf.keras.losses.Loss):
         #sum with weight
         total_loss = mult_loss + self.alpha*mse_loss
 
-        return total_loss'''
+        return total_loss
 
 class multinomialnll_mse_reg(tf.keras.losses.Loss):
     def __init__(self, name="multinomialnll_mse_reg", **kwargs):
@@ -229,8 +236,17 @@ class r2 (tf.keras.losses.Loss):
         super().__init__(name=name)
 
     def call(self, y_true, y_pred):
+        print(y_true)
+        print(y_pred)
         y_true = tf.cast(y_true, 'float32')
         y_pred = tf.cast(y_pred, 'float32')
+        print("y_true shape")
+        print(y_true.shape)
+        print(y_true)
+        print("y_pred shape")
+        print(y_pred.shape)
+        print(y_pred)
+
         shape = y_true.shape[-1]
         true_sum = tf.reduce_sum(y_true, axis=[0,1])
         true_sumsq = tf.reduce_sum(tf.math.square(y_true), axis=[0,1])
@@ -240,14 +256,18 @@ class r2 (tf.keras.losses.Loss):
         count = tf.reduce_sum(count, axis=[0,1])
 
         true_mean = tf.divide(true_sum, count)
+        print(true_mean)
         true_mean2 = tf.math.square(true_mean)
+        print(true_mean2)
 
         total = true_sumsq - tf.multiply(count, true_mean2)
+        print(total)
 
         resid1 = pred_sumsq
         resid2 = -2*product
         resid3 = true_sumsq
         resid = resid1 + resid2 + resid3
+        print(resid)
 
         r2 = tf.ones_like(shape, dtype=tf.float32) - tf.divide(resid, total)
         return -tf.reduce_mean(r2)

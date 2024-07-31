@@ -9,7 +9,7 @@ from maxatac.utilities.system_tools import Mute
 
 with Mute():
     from maxatac.utilities.callbacks import get_callbacks
-    from maxatac.utilities.training_tools import DataGenerator, MaxATACModel, ROIPool, SeqDataGenerator, model_selection
+    from maxatac.utilities.training_tools import DataGenerator, MaxATACModel, ROIPool, SeqDataGenerator, model_selection, model_selection_v2
     from maxatac.utilities.plot import export_binary_metrics, export_loss_mse_coeff, export_model_structure
 
 
@@ -205,13 +205,13 @@ def run_training(args):
     logging.info("Plot and save results")
 
     # Select best model
-'''    best_epoch = model_selection(training_history=training_history,
-                                 output_dir=maxatac_model.output_directory,
-                                 quant=args.quant)'''
 
-    best_epoch = model_selection_v2(training_history=training_history,
-                                 output_dir=maxatac_model.output_directory
-                                 )
+    #best_epoch = model_selection(training_history=training_history,
+    #                             output_dir=maxatac_model.output_directory,
+    #                             quant=args.quant)
+
+    best_epoch = model_selection_v2(
+        training_history=training_history, output_dir=maxatac_model.output_directory)
 
     # If plot then plot the model structure and training metrics
     if args.plot:

@@ -667,7 +667,7 @@ def get_parser():
                                   dest="method",
                                   type=str,
                                   default="min-max",
-                                  help="The method to use for normalization. Choose from min-max, zscore, arcsinh, log2, log1p, or sqrt"
+                                  help="The method to use for normalization. Choose from min-max, zscore, arcsinh, log2, log1p, sqrt, three_fourths, or three_eighths"
                                   )
 
     normalize_parser.add_argument("--max_percentile",

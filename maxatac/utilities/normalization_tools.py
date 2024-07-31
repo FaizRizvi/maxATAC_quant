@@ -172,3 +172,23 @@ def sqrt_normalize_array(array):
     :return: Square root normalized array
     """
     return np.sqrt(array)
+
+def three_fourth_normalize_array(array):
+    """
+    Square Root normalize the numpy array
+
+    :param array: Input array of bigwig values
+
+    :return: array raised to the (3/4) power
+    """
+    return array**(3/4)
+
+def three_eighths_normalize_array(array):
+    """
+    Square Root normalize the numpy array
+
+    :param array: Input array of bigwig values
+
+    :return: array raised to the (3/8) power
+    """
+    return array**(3/8)
