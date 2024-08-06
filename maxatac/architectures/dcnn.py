@@ -148,6 +148,8 @@ def get_layer(
     run Conv1DTranspose and Concatenation. Optionally, you
     can skip batch normalization
     """
+    tf.config.experimental_run_functions_eagerly(True) # TODO: for debugging loss fn remove
+
     for i in range(n):
         inbound_layer = Conv1D(
             filters=filters,
@@ -339,6 +341,7 @@ def get_dilated_cnn(
                 beta_2=adam_beta_2,
                 decay=adam_decay
             ),
+            run_eagerly=True, # TODO: for debugging loss fn remove
             loss=loss_function,
             metrics=[loss_function, coeff_determination, pearson, spearman] #mse
             # tf.keras.metrics.RootMeanSquaredError(), tf.keras.metrics.Precision(), tf.keras.metrics.Recall(),

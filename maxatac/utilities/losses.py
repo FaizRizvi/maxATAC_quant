@@ -129,9 +129,7 @@ class mse(tf.keras.losses.Loss):
         super().__init__(name=name)
 
     def call(self, y_true, y_pred):
-        print("y_true")
         print(y_true)
-        print("y_pred")
         print(y_pred)
         print(tf.keras.losses.MSE(y_true,y_pred))
         return tf.keras.losses.MSE(y_true,y_pred)
@@ -141,12 +139,15 @@ class multinomialnll(tf.keras.losses.Loss):
         super().__init__(name=name)
 
     def call(self, y_true, y_pred):
-        print("y_true")
-        print(y_true)
-        print("y_pred")
-        print(y_pred)
-        logits_perm = tf.transpose(y_pred, (0, 2, 1))
-        true_counts_perm = tf.transpose(y_true, (0, 2, 1))
+        logits_perm = y_pred
+        #logits_perm = tf.transpose(y_pred, (0, 2, 1))
+        true_counts_perm = y_true
+        #true_counts_perm = tf.transpose(y_true, (0, 2, 1))
+
+        #import numpy
+        #np.savetxt("/Users/war9qi/Project_Data/maxATAC_sample/ELK1_quantitative_output/true_counts_perm.tsv", true_counts_perm, delimiter='\t')
+        #np.savetxt("/Users/war9qi/Project_Data/maxATAC_sample/ELK1_quantitative_output/logits_perm.tsv", logits_perm, delimiter='\t')
+        
         counts_per_example = tf.reduce_sum(true_counts_perm, axis=-1)
         dist = tfp.distributions.Multinomial(total_count=counts_per_example,
                                                 logits=logits_perm)
@@ -156,24 +157,24 @@ class multinomialnll(tf.keras.losses.Loss):
 
 class multinomialnll_mse(tf.keras.losses.Loss):
     def __init__(self, name="multinomial_mse", **kwargs):
+        '''
+        BPnet Loss Function
+        '''
         super().__init__(name=name)
-        self.alpha=kwargs.get('alpha')
+        self.alpha = kwargs.get('loss_params')
+        if not self.alpha:
+            print('ALPHA SET TO DEFAULT VALUE!')
+            self.alpha = 0.0000001
+        # self.alpha=0.001
     def call(self, y_true, y_pred):
-        #multinomial part of loss function
-        logits_perm = tf.transpose(y_pred[0], (0, 2, 1))
-        true_counts_perm = tf.transpose(y_true[0], (0, 2, 1))
-        counts_per_example = tf.reduce_sum(true_counts_perm, axis=-1)
-        dist = tfp.distributions.Multinomial(total_count=counts_per_example,
-                                                logits=logits_perm)
-        # get the sequence length for normalization
-        seqlen = tf.cast(tf.shape(y_true[0])[0],dtype=tf.float32)
-        mult_loss = -tf.reduce_sum(dist.log_prob(true_counts_perm)) / seqlen
+        # Multinomial part of loss function
+        mult_loss = multinomialnll()(y_true, y_pred)
 
-        #MSE part of loss function
-        mse_loss = tf.keras.losses.MSE(y_true[1], y_pred[1])
+        # MSE part of loss function
+        mse_loss = tf.keras.losses.MSE(y_true, y_pred)
 
-        #sum with weight
-        total_loss = mult_loss + self.alpha*mse_loss
+        # sum with weight
+        total_loss = mult_loss + self.alpha * mse_loss
 
         return total_loss
 
