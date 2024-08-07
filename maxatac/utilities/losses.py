@@ -2,7 +2,7 @@
 from maxatac.utilities.system_tools import Mute
 import tensorflow as tf
 import tensorflow_probability as tfp
-
+import numpy as np
 
 with Mute():
     from tensorflow.keras import backend as K
@@ -129,9 +129,6 @@ class mse(tf.keras.losses.Loss):
         super().__init__(name=name)
 
     def call(self, y_true, y_pred):
-        print(y_true)
-        print(y_pred)
-        print(tf.keras.losses.MSE(y_true,y_pred))
         return tf.keras.losses.MSE(y_true,y_pred)
 
 class multinomialnll(tf.keras.losses.Loss):
@@ -157,24 +154,39 @@ class multinomialnll(tf.keras.losses.Loss):
 
 class multinomialnll_mse(tf.keras.losses.Loss):
     def __init__(self, name="multinomial_mse", **kwargs):
-        '''
-        BPnet Loss Function
-        '''
         super().__init__(name=name)
         self.alpha = kwargs.get('loss_params')
         if not self.alpha:
             print('ALPHA SET TO DEFAULT VALUE!')
             self.alpha = 0.0000001
-        # self.alpha=0.001
     def call(self, y_true, y_pred):
-        # Multinomial part of loss function
-        mult_loss = multinomialnll()(y_true, y_pred)
+        #multinomial part of loss function
 
-        # MSE part of loss function
-        mse_loss = tf.keras.losses.MSE(y_true, y_pred)
+        #logits_perm = tf.transpose(y_pred[0], (0, 2, 1))
+        #true_counts_perm = tf.transpose(y_true[0], (0, 2, 1))
 
-        # sum with weight
-        total_loss = mult_loss + self.alpha * mse_loss
+        logits_perm = y_pred[0]
+        true_counts_perm = y_true[0]
+        np.savetxt("/Users/war9qi/Project_Data/maxATAC_sample/ELK1_quantitative_output/y_pred0.tsv", logits_perm, delimiter='\t')
+        np.savetxt("/Users/war9qi/Project_Data/maxATAC_sample/ELK1_quantitative_output/y_true0.tsv", true_counts_perm, delimiter='\t')
+
+
+
+        counts_per_example = tf.reduce_sum(true_counts_perm, axis=-1)
+        dist = tfp.distributions.Multinomial(total_count=counts_per_example,
+                                                logits=logits_perm)
+        # get the sequence length for normalization
+        seqlen = tf.cast(tf.shape(y_true[0])[0],dtype=tf.float32)
+        tf.print("Seqlen:", seqlen)
+        mult_loss = -tf.reduce_sum(dist.log_prob(true_counts_perm)) / seqlen
+
+        #MSE part of loss function
+        mse_loss = tf.keras.losses.MSE(y_true[1], y_pred[1])
+
+        #sum with weight
+        tf.print("mult_loss:", mult_loss)
+        tf.print("mse_loss:", mse_loss)
+        total_loss = mult_loss + self.alpha*mse_loss
 
         return total_loss
 
@@ -272,3 +284,18 @@ class r2 (tf.keras.losses.Loss):
 
         r2 = tf.ones_like(shape, dtype=tf.float32) - tf.divide(resid, total)
         return -tf.reduce_mean(r2)
+
+class poissonnll(tf.keras.losses.Loss):
+    def __init__(self, name="poissonnll", **kwargs):
+        super().__init__(name=name)
+
+    def call(self, y_true, y_pred):
+
+        logInput = np.log(y_true)
+        Target = y_pred
+
+        loss = tf.nn.log_poisson_loss(log_input=logInput,
+                                   targets=Target,
+                                   compute_full_loss=True)
+
+        return loss
