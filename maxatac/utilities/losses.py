@@ -1,3 +1,4 @@
+import pandas as pd
 
 from maxatac.utilities.system_tools import Mute
 import tensorflow as tf
@@ -137,9 +138,7 @@ class multinomialnll(tf.keras.losses.Loss):
 
     def call(self, y_true, y_pred):
         logits_perm = y_pred
-        #logits_perm = tf.transpose(y_pred, (0, 2, 1))
         true_counts_perm = y_true
-        #true_counts_perm = tf.transpose(y_true, (0, 2, 1))
 
         #import numpy
         #np.savetxt("/Users/war9qi/Project_Data/maxATAC_sample/ELK1_quantitative_output/true_counts_perm.tsv", true_counts_perm, delimiter='\t')
@@ -150,7 +149,10 @@ class multinomialnll(tf.keras.losses.Loss):
                                                 logits=logits_perm)
         # get the sequence length for normalization
         seqlen = tf.cast(tf.shape(y_true)[0],dtype=tf.float32)
+
         return -tf.reduce_sum(dist.log_prob(true_counts_perm)) / seqlen
+        #tf.print("seqlen: ", seqlen, "true_counts_perm_shape: ", tf.shape(true_counts_perm), "counts_per_example: ", tf.shape(counts_per_example), "loss: ", loss)
+
 
 class multinomialnll_mse(tf.keras.losses.Loss):
     def __init__(self, name="multinomial_mse", **kwargs):
@@ -159,36 +161,105 @@ class multinomialnll_mse(tf.keras.losses.Loss):
         if not self.alpha:
             print('ALPHA SET TO DEFAULT VALUE!')
             self.alpha = 0.0000001
+            self.counter=1
     def call(self, y_true, y_pred):
+
         #multinomial part of loss function
-
-        #logits_perm = tf.transpose(y_pred[0], (0, 2, 1))
-        #true_counts_perm = tf.transpose(y_true[0], (0, 2, 1))
-
-        logits_perm = y_pred[0]
-        true_counts_perm = y_true[0]
-        np.savetxt("/Users/war9qi/Project_Data/maxATAC_sample/ELK1_quantitative_output/y_pred0.tsv", logits_perm, delimiter='\t')
-        np.savetxt("/Users/war9qi/Project_Data/maxATAC_sample/ELK1_quantitative_output/y_true0.tsv", true_counts_perm, delimiter='\t')
-
+        logits_perm = y_pred
+        true_counts_perm = y_true
 
 
         counts_per_example = tf.reduce_sum(true_counts_perm, axis=-1)
         dist = tfp.distributions.Multinomial(total_count=counts_per_example,
                                                 logits=logits_perm)
         # get the sequence length for normalization
-        seqlen = tf.cast(tf.shape(y_true[0])[0],dtype=tf.float32)
-        tf.print("Seqlen:", seqlen)
+        #seqlen = tf.cast(tf.shape(y_true[0])[0],dtype=tf.float32)
+        seqlen = tf.cast(tf.shape(y_true)[0], dtype=tf.float32)
         mult_loss = -tf.reduce_sum(dist.log_prob(true_counts_perm)) / seqlen
 
         #MSE part of loss function
-        mse_loss = tf.keras.losses.MSE(y_true[1], y_pred[1])
+        #mse_loss = tf.keras.losses.MSE(y_true[1], y_pred[1])
+        mse_loss = tf.keras.losses.MSE(y_true, y_pred)
+        mse_loss = np.average(mse_loss)
 
         #sum with weight
-        tf.print("mult_loss:", mult_loss)
-        tf.print("mse_loss:", mse_loss)
         total_loss = mult_loss + self.alpha*mse_loss
 
+        #tf.print("seqlen: ", seqlen, "true_counts_perm_shape: ", tf.shape(true_counts_perm), "counts_per_example: ",
+        #         tf.shape(counts_per_example), "mult_loss: ", mult_loss, "mse_loss: ", mse_loss, "total_loss: ", total_loss)
+
+
+        ### BPNET implementation
+
+        import keras.backend as K
+
+        probs = y_pred / K.sum(y_pred, axis=-2, keepdims=True)
+        logits = K.log(probs / (1 - probs))
+
+        # multinomial loss
+        multinomial_loss = multinomialnll()(y_true, logits)
+
+        np.savetxt("/Users/war9qi/Project_Data/maxATAC_sample/ELK1_quantitative_output/y_true.tsv", y_true,
+                   delimiter='\t')
+        np.savetxt("/Users/war9qi/Project_Data/maxATAC_sample/ELK1_quantitative_output/y_pred.tsv", y_pred,
+                   delimiter='\t')
+
+        MSE_loss = tf.keras.losses.MSE([K.log(1 + K.sum(y_true, axis=(-2, -1)))],
+                                       [K.log(1 + K.sum(y_pred, axis=(-2, -1)))])
+
+
+        bpnet_loss = multinomial_loss + self.alpha * MSE_loss
+
+        if self.counter in range(0,40):
+            epoch = 1
+        elif self.counter in range(40,80):
+            epoch = 2
+        elif self.counter in range(80,120):
+            epoch = 3
+        elif self.counter in range(120,160):
+            epoch = 4
+        else:
+            epoch = 5
+
+        tf.print("epoch: ", epoch, "multinomialnll_GOPHER: ", total_loss, "multinomialnll_BPnet: ", bpnet_loss)
+        self.counter = self.counter +1
+
+        if self.counter == 39 or self.counter ==79 or self.counter == 119 or self.counter == 159 or self.counter==199:
+
+            df=pd.DataFrame([[total_loss.numpy(), bpnet_loss.numpy()]], columns=['GOPHER_multinomialnll', 'BPnet_multinomialnll'])
+
+            df.to_csv("/Users/war9qi/Project_Data/maxATAC_sample/ELK1_quantitative_output/Epoch_"+str(epoch)+"_loss_comp.tsv", sep = '\t')
+
         return total_loss
+
+class multinomialnll_mse_bpnet(tf.keras.losses.Loss):
+    def __init__(self, name="multinomialnll_mse_bpnet", **kwargs):
+        super().__init__(name=name)
+        self.alpha = kwargs.get('loss_params')
+        if not self.alpha:
+            print('ALPHA SET TO DEFAULT VALUE!')
+            self.alpha = 0.0000001
+
+    def call(self, y_true, y_pred):
+        import keras.backend as K
+
+        probs = y_pred / K.sum(y_pred, axis=-2, keepdims=True)
+        logits = K.log(probs / (1 - probs))
+
+        # multinomial loss
+        multinomial_loss = multinomialnll()(y_true, logits)
+
+        np.savetxt("/Users/war9qi/Project_Data/maxATAC_sample/ELK1_quantitative_output/y_true.tsv", y_true,
+                   delimiter='\t')
+        np.savetxt("/Users/war9qi/Project_Data/maxATAC_sample/ELK1_quantitative_output/y_pred.tsv", y_pred,
+                   delimiter='\t')
+
+        mse_loss = tf.keras.losses.MSE([K.log(1 + K.sum(y_true, axis=(-2, -1)))],
+                             [K.log(1 + K.sum(y_pred, axis=(-2, -1)))])
+
+        return multinomial_loss + self.alpha * mse_loss
+
+
 
 class multinomialnll_mse_reg(tf.keras.losses.Loss):
     def __init__(self, name="multinomialnll_mse_reg", **kwargs):
@@ -291,8 +362,8 @@ class poissonnll(tf.keras.losses.Loss):
 
     def call(self, y_true, y_pred):
 
-        logInput = np.log(y_true)
-        Target = y_pred
+        logInput = np.log(y_pred)
+        Target = y_true
 
         loss = tf.nn.log_poisson_loss(log_input=logInput,
                                    targets=Target,

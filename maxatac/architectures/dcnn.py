@@ -325,6 +325,9 @@ def get_dilated_cnn(
         elif loss == "r2":
             from maxatac.utilities.losses import r2
             loss_function = r2()
+        elif loss == "multinomialnll_mse_bpnet":
+            from maxatac.utilities.losses import multinomialnll_mse_bpnet
+            loss_function = multinomialnll_mse_bpnet()
         else:
             from maxatac.utilities.losses import mse
             loss = "mse"
