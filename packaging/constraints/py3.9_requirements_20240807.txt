@@ -37,7 +37,7 @@ py2bit==0.3.0
 pyasn1==0.4.8
 pyasn1-modules==0.2.8
 pybedtools==0.8.2
-pyBigWig==0.3.17
+pyBigWig==0.3.18
 pydot==1.4.2
 pyfiglet==0.8.post1
 pyparsing==2.4.7
