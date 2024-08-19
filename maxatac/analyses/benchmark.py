@@ -47,32 +47,37 @@ def run_benchmarking(args):
     )
 
     # Calculate the AUPR using the prediction and gold standard
-    for chromosome in args.chromosomes:
-        logging.info("Benchmarking " + chromosome)
-        # Build the results filename
-        results_filename = os.path.join(output_dir,
-                                        args.prefix + "_" + chromosome + "_" + str(args.bin_size) + "bp_PRC.tsv")
-        results_filename2 = os.path.join(output_dir,
-                                        args.prefix + "_" + chromosome + "_" + str(args.bin_size) + "r2_spearman_spearman.tsv")
+    if args.quant:
+        for chromosome in args.chromosomes:
+            logging.info("Benchmarking " + chromosome)
+            # Build the results filename
+            results_filename2 = os.path.join(output_dir,
+                                            args.prefix + "_" + chromosome + "_" + str(args.bin_size) + "r2_spearman_spearman.tsv")
 
-        ChromosomeAUPRC(args.prediction,
-                        args.gold_standard,
-                        args.blacklist_bw,
-                        chromosome,
-                        args.bin_size,
-                        args.agg_function,
-                        results_filename,
-                        args.round_predictions,
-                        plot=args.skip_plot)
-
-        if args.quant:
             calculate_R2_pearson_spearman(args.prediction,
                                           args.gold_standard,
                                           chromosome,
                                           args.bin_size,
+                                          args.agg_function,
                                           results_filename2,
                                           args.blacklist_bw
                                           )
+    else:
+        for chromosome in args.chromosomes:
+            logging.info("Benchmarking " + chromosome)
+            # Build the results filename
+            results_filename = os.path.join(output_dir,
+                                            args.prefix + "_" + chromosome + "_" + str(args.bin_size) + "bp_PRC.tsv")
+
+            ChromosomeAUPRC(args.prediction,
+                            args.gold_standard,
+                            args.blacklist_bw,
+                            chromosome,
+                            args.bin_size,
+                            args.agg_function,
+                            results_filename,
+                            args.round_predictions,
+                            plot=args.skip_plot)
 
     # Measure End Time of Training
     stopTime = timeit.default_timer()

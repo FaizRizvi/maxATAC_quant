@@ -179,7 +179,13 @@ class multinomialnll_mse(tf.keras.losses.Loss):
 
         #MSE part of loss function
         #mse_loss = tf.keras.losses.MSE(y_true[1], y_pred[1])
-        mse_loss = tf.keras.losses.MSE(y_true, y_pred)
+        log_true = np.log(y_true + 1)
+        log_pred = np.log(y_pred + 1)
+        mse_loss = tf.keras.losses.MSE(log_true, log_pred)
+
+        #mse_loss = tf.keras.losses.MSE(y_true, y_pred)
+
+        tf.print("mse_loss: ", mse_loss)
         mse_loss = np.average(mse_loss)
 
         #sum with weight

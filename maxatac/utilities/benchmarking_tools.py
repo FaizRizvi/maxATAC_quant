@@ -28,6 +28,7 @@ class calculate_R2_pearson_spearman(object):
                  goldstandard_bw,
                  chromosome,
                  bin_size,
+                 agg_function,
                  results_location,
                  blacklist_bw
                  ):
@@ -45,12 +46,19 @@ class calculate_R2_pearson_spearman(object):
 
         self.bin_count = int(int(self.chromosome_length) / int(bin_size))  # need to floor the number
         self.bin_size = bin_size
+        self.agg_function = agg_function
 
+        # This has been modified
         self.blacklist_mask = chromosome_blacklist_mask(blacklist_bw,
                                                         self.chromosome,
                                                         self.chromosome_length,
+                                                        self.bin_count)
+
+        '''self.blacklist_mask = chromosome_blacklist_mask(blacklist_bw,
+                                                        self.chromosome,
+                                                        self.chromosome_length,
                                                         self.chromosome_length #self.bin_count #nBins= bin_size
-                                                        )
+                                                        )'''
 
         # Call on the def in the class object to do the calculations
         self.__import_prediction_array__()
@@ -65,11 +73,21 @@ class calculate_R2_pearson_spearman(object):
 
         # Get the bin stats from the prediction array
 
-        self.prediction_array = np.nan_to_num(self.prediction_stream.values(self.chromosome,
+        self.prediction_array = np.nan_to_num(np.array(self.prediction_stream.stats(self.chromosome,
+                                                                                    0,
+                                                                                    self.chromosome_length,
+                                                                                    type=self.agg_function,
+                                                                                    nBins=self.bin_count,
+                                                                                    exact=True),
+                                                       dtype=float  # need it to have NaN instead of None
+                                                       )
+                                              )
+
+        '''self.prediction_array = np.nan_to_num(self.prediction_stream.values(self.chromosome,
                                                                             0,
                                                                             self.chromosome_length
                                                                             )
-                                              )
+                                              )'''
 
     def __import_goldstandard_array__(self):
         """
@@ -81,11 +99,22 @@ class calculate_R2_pearson_spearman(object):
 
         # Get the bin stats from the gold standard array
 
-        self.goldstandard_array = np.nan_to_num(self.goldstandard_stream.values(self.chromosome,
+        self.goldstandard_array = np.nan_to_num(np.array(self.goldstandard_stream.stats(self.chromosome,
+                                                                                        0,
+                                                                                        self.chromosome_length,
+                                                                                        type=self.agg_function,
+                                                                                        nBins=self.bin_count,
+                                                                                        exact=True
+                                                                                        ),
+                                                         dtype=float  # need it to have NaN instead of None
+                                                         )
+                                                ) # Commented out to keep values non-boolean:  > 0  # to convert to boolean array
+
+        '''self.goldstandard_array = np.nan_to_num(self.goldstandard_stream.values(self.chromosome,
                                                                                 0,
                                                                                 self.chromosome_length
                                                                                 )
-                                                )
+                                                )'''
 
     def __R2_Sp_P__(self):
         """
