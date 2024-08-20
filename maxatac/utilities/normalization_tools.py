@@ -151,7 +151,7 @@ def log2_normalize_array(array):
 
     :return: log2 normalized array
     """
-    return np.log2(array)
+    return np.log2(array) + 1
 
 def log1p_normalize_array(array):
     """
