@@ -75,7 +75,10 @@ def run_averaging(args):
                 chrom_vals += get_bigwig_values(bigwig_file, chrom_name, chrom_length)
 
             # After looping through the files average the values
-            chrom_vals = chrom_vals / number_input_bigwigs
+            if args.quant:
+                chrom_vals = round((chrom_vals / number_input_bigwigs), 2)
+            else:
+                chrom_vals = chrom_vals / number_input_bigwigs
 
             logging.info(f"Writing average values for chromosome: {chrom_name}")
 

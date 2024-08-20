@@ -161,6 +161,15 @@ def get_parser():
                                 required=True,
                                 help="Output filename base. The extension .bw will be added to the name."
                                 )
+
+    average_parser.add_argument("-q", "--quant",
+                                dest="quant",
+                                action='store_true',
+                                required=False,
+                                help="Input quant files for averaging, restricts to two decimal points."
+                                )
+
+
     # Add optional arguments to the parser
     average_parser.add_argument("-cs", "--chrom_sizes", "--chromosome_sizes",
                                 dest="chromosome_sizes",
