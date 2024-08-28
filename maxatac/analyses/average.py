@@ -77,7 +77,7 @@ def run_averaging(args):
             # After looping through the files average the values
             if args.quant:
                 logging.info(f"Using quant option to restrict to two decimal points.")
-                chrom_vals = round((chrom_vals / number_input_bigwigs), 2)
+                chrom_vals = np.round((chrom_vals / number_input_bigwigs), 2)
             else:
                 chrom_vals = chrom_vals / number_input_bigwigs
 

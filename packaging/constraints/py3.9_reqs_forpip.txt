@@ -19,3 +19,4 @@ tensorflow==2.5.0
 tensorboard-plugin-wit==1.8.0
 google-auth-oauthlib==0.4.6
 absl-py==0.14.1
+setuptools==66.0.0
