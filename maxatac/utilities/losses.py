@@ -191,7 +191,7 @@ class multinomialnll_mse(tf.keras.losses.Loss):
         #sum with weight
         total_loss = mult_loss + self.alpha*mse_loss
 
-        #tf.print("seqlen: ", seqlen, "true_counts_perm_shape: ", tf.shape(true_counts_perm), "counts_per_example: ",
+        '''#tf.print("seqlen: ", seqlen, "true_counts_perm_shape: ", tf.shape(true_counts_perm), "counts_per_example: ",
         #         tf.shape(counts_per_example), "mult_loss: ", mult_loss, "mse_loss: ", mse_loss, "total_loss: ", total_loss)
 
 
@@ -234,7 +234,7 @@ class multinomialnll_mse(tf.keras.losses.Loss):
 
             df=pd.DataFrame([[total_loss.numpy(), bpnet_loss.numpy()]], columns=['GOPHER_multinomialnll', 'BPnet_multinomialnll'])
 
-            df.to_csv("/Users/war9qi/Project_Data/maxATAC_sample/ELK1_quantitative_output/Epoch_"+str(epoch)+"_loss_comp.tsv", sep = '\t')
+            df.to_csv("/Users/war9qi/Project_Data/maxATAC_sample/ELK1_quantitative_output/Epoch_"+str(epoch)+"_loss_comp.tsv", sep = '\t')'''
 
         return total_loss
 
