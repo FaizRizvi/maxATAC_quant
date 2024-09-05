@@ -26,6 +26,7 @@ class calculate_R2_pearson_spearman(object):
     def __init__(self,
                  prediction_bw,
                  goldstandard_bw,
+                 quant_goldstandard_bw,
                  chromosome,
                  bin_size,
                  agg_function,
@@ -40,6 +41,7 @@ class calculate_R2_pearson_spearman(object):
 
         self.prediction_stream = load_bigwig(prediction_bw)
         self.goldstandard_stream = load_bigwig(goldstandard_bw)
+        self.quant_goldstandard_stream = load_bigwig(quant_goldstandard_bw)
 
         self.chromosome = chromosome
         self.chromosome_length = self.goldstandard_stream.chroms(self.chromosome)
@@ -63,7 +65,9 @@ class calculate_R2_pearson_spearman(object):
         # Call on the def in the class object to do the calculations
         self.__import_prediction_array__()
         self.__import_goldstandard_array__()
+        self.__import_quant_goldstandard_array__()
         self.__R2_Sp_P__()
+        self.__plot__()
 
     def __import_prediction_array__(self):
         """
@@ -83,11 +87,7 @@ class calculate_R2_pearson_spearman(object):
                                                        )
                                               )
 
-        '''self.prediction_array = np.nan_to_num(self.prediction_stream.values(self.chromosome,
-                                                                            0,
-                                                                            self.chromosome_length
-                                                                            )
-                                              )'''
+
 
     def __import_goldstandard_array__(self):
         """
@@ -110,11 +110,27 @@ class calculate_R2_pearson_spearman(object):
                                                          )
                                                 ) # Commented out to keep values non-boolean:  > 0  # to convert to boolean array
 
-        '''self.goldstandard_array = np.nan_to_num(self.goldstandard_stream.values(self.chromosome,
-                                                                                0,
-                                                                                self.chromosome_length
-                                                                                )
-                                                )'''
+
+    def __import_quant_goldstandard_array__(self):
+        """
+        Import the chromosome signal from the gold standard bigwig file and convert to a numpy array.
+        """
+
+        logging.info("Import Gold Standard Array")
+        # prediction_chromosome_data = np.round(prediction_chromosome_data, round_predictions)
+
+        # Get the bin stats from the gold standard array
+
+        self.quant_goldstandard_array = np.nan_to_num(np.array(self.quant_goldstandard_stream.stats(self.chromosome,
+                                                                                        0,
+                                                                                        self.chromosome_length,
+                                                                                        type=self.agg_function,
+                                                                                        nBins=self.bin_count,
+                                                                                        exact=True
+                                                                                        ),
+                                                         dtype=float  # need it to have NaN instead of None
+                                                         )
+                                                ) # Commented out to keep values non-boolean:  > 0  # to convert to boolean array
 
     def __R2_Sp_P__(self):
         """
@@ -142,6 +158,30 @@ class calculate_R2_pearson_spearman(object):
                                   columns=['R2', 'pearson', 'pearson_pval', 'spearman', 'spearman_pval'])
 
         R2_Sp_P_df.to_csv(self.results_location, sep='\t', index=None)
+
+    def __plot__(self):
+        y_pred=self.prediction_array[self.blacklist_mask]
+        y_obs=self.quant_goldstandard_array[self.blacklist_mask]
+
+        data={'y_obs': y_obs, 'y_pred': y_pred}
+        plot_df=pd.DataFrame(data)
+
+        #Drop Rows containing 0s
+        plot_df = plot_df[plot_df.y_obs != 0]
+        plot_df = plot_df[plot_df.y_pred != 0]
+
+        fig, ax = plt.subplots()
+        ax.scatter(plot_df.y_obs, plot_df.y_pred)
+        plot_location='_'.join([self.results_location.split(".")[0], "scatterPlot.png"])
+
+        fig.savefig(plot_location,
+            bbox_inches="tight"
+        )
+
+        plot_df_location = '_'.join([self.results_location.split(".")[0], "scatterPlot_df.tsv"])
+        plot_df.to_csv(plot_df_location, sep='\t', index=None)
+
+
 
 class ChromosomeAUPRC(object):
     """

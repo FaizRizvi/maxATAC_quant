@@ -727,6 +727,12 @@ def get_parser():
                                                help="Prediction bigWig file"
                                                )
 
+    benchmark_parser.add_argument("--quant_gold_standard",
+                                  dest="quant_gold_standard",
+                                  type=str,
+                                  help="Quantitative Gold Standard file"
+                                  )
+
     benchmark_parser.add_argument("--gold_standard",
                                   dest="gold_standard",
                                   type=str,
