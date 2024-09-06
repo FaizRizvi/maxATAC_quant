@@ -116,7 +116,7 @@ class calculate_R2_pearson_spearman(object):
         Import the chromosome signal from the gold standard bigwig file and convert to a numpy array.
         """
 
-        logging.info("Import Gold Standard Array")
+        logging.info("Import Quantitative Gold Standard Array")
         # prediction_chromosome_data = np.round(prediction_chromosome_data, round_predictions)
 
         # Get the bin stats from the gold standard array
@@ -236,6 +236,7 @@ class ChromosomeAUPRC(object):
         self.__AUPRC__()
 
         if plot:
+            logging.info("Plotting AUPRC Curves")
             self.__plot()
 
     def __import_prediction_array__(self, round_prediction=6):

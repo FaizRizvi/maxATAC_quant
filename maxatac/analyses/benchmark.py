@@ -52,7 +52,7 @@ def run_benchmarking(args):
             logging.info("Benchmarking " + chromosome)
             # Build the results filename
             results_filename2 = os.path.join(output_dir,
-                                            args.prefix + "_" + chromosome + "_" + str(args.bin_size) + "r2_spearman_spearman.tsv")
+                                            args.prefix + "_" + chromosome + "_" + str(args.bin_size) + "_" + "r2_spearman_spearman.tsv")
 
             calculate_R2_pearson_spearman(args.prediction,
                                           args.gold_standard,
@@ -78,7 +78,7 @@ def run_benchmarking(args):
                             args.agg_function,
                             results_filename,
                             args.round_predictions,
-                            plot=args.skip_plot)
+                            plot=args.plot)
 
     # Measure End Time of Training
     stopTime = timeit.default_timer()
