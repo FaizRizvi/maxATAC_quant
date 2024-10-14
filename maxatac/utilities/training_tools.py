@@ -288,6 +288,9 @@ def get_target_matrix(binding_stream,
     try:
         # Get the target matrix
         target_vector = np.array(binding_stream.values(chromosome, start, end)).T
+        #import pdb; pdb.set_trace()
+        if target_vector.shape[0] == 0:
+            target_vector = np.zeros(1024)
 
     except:
         # TODO change length of array
