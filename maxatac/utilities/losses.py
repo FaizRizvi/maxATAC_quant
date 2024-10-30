@@ -133,7 +133,7 @@ class mse(tf.keras.losses.Loss):
         return tf.keras.losses.MSE(y_true,y_pred)
 
 class multinomialnll(tf.keras.losses.Loss):
-    def __init__(self, name="multinomial", **kwargs):
+    def __init__(self, name="multinomialnll", **kwargs):
         super().__init__(name=name)
 
     def call(self, y_true, y_pred):
@@ -155,7 +155,7 @@ class multinomialnll(tf.keras.losses.Loss):
 
 
 class multinomialnll_mse(tf.keras.losses.Loss):
-    def __init__(self, name="multinomial_mse", **kwargs):
+    def __init__(self, name="multinomialnll_mse", **kwargs):
         super().__init__(name=name)
         self.alpha = kwargs.get('loss_params')
         if not self.alpha:
@@ -368,7 +368,9 @@ class poissonnll(tf.keras.losses.Loss):
 
     def call(self, y_true, y_pred):
 
-        logInput = np.log(y_pred)
+        #logInput = np.log(y_pred)
+        logInput = tf.math.log(y_pred)
+        
         Target = y_true
 
         loss = tf.nn.log_poisson_loss(log_input=logInput,

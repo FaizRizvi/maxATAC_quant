@@ -138,19 +138,19 @@ class calculate_R2_pearson_spearman(object):
         """
         logging.info("Calculate R2")
         R2_score = r2_score(
-            self.goldstandard_array[self.blacklist_mask],
+            self.quant_goldstandard_array[self.blacklist_mask],
             self.prediction_array[self.blacklist_mask]
             )
 
         logging.info("Calculate Pearson Correlation")
         pearson_score, pearson_pval = pearsonr(
-            self.goldstandard_array[self.blacklist_mask],
+            self.quant_goldstandard_array[self.blacklist_mask],
             self.prediction_array[self.blacklist_mask]
             )
 
         logging.info("Calculate Spearman Correlation")
         spearman_score, spearman_pval = spearmanr(
-            self.goldstandard_array[self.blacklist_mask],
+            self.quant_goldstandard_array[self.blacklist_mask],
             self.prediction_array[self.blacklist_mask]
             )
 
