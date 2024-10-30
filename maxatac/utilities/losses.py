@@ -165,6 +165,8 @@ class multinomialnll_mse(tf.keras.losses.Loss):
     def call(self, y_true, y_pred):
 
         #multinomial part of loss function
+
+        y_pred = tf.clip_by_value(y_pred, -0.9999, 1e10)
         logits_perm = y_pred
         true_counts_perm = y_true
 
@@ -175,6 +177,11 @@ class multinomialnll_mse(tf.keras.losses.Loss):
         # get the sequence length for normalization
         #seqlen = tf.cast(tf.shape(y_true[0])[0],dtype=tf.float32)
         seqlen = tf.cast(tf.shape(y_true)[0], dtype=tf.float32)
+
+        tf.print(tf.shape(y_true), tf.shape(y_true)[0], tf.shape(y_true)[1], tf.cast(tf.shape(y_true)[0], dtype=tf.float32), tf.cast(tf.shape(y_true[0])[0],dtype=tf.float32))
+
+        tf.print("#seqlen", tf.cast(tf.shape(y_true[0])[0],dtype=tf.float32))
+        tf.print("seqlen", tf.cast(tf.shape(y_true)[0], dtype=tf.float32))
         mult_loss = -tf.reduce_sum(dist.log_prob(true_counts_perm)) / seqlen
 
         #MSE part of loss function
@@ -369,7 +376,8 @@ class poissonnll(tf.keras.losses.Loss):
     def call(self, y_true, y_pred):
 
         #logInput = np.log(y_pred)
-        logInput = tf.math.log(y_pred)
+        y_pred = tf.clip_by_value(y_pred, -0.9999, 1e10)
+        logInput = tf.math.log(y_pred + 1)
         
         Target = y_true
 
