@@ -164,9 +164,12 @@ class multinomialnll_mse(tf.keras.losses.Loss):
             self.counter=1
     def call(self, y_true, y_pred):
 
+        # GOPHER implementation of loss
+
+        '''
         #multinomial part of loss function
 
-        y_pred = tf.clip_by_value(y_pred, -0.9999, 1e10)
+        # y_pred = tf.clip_by_value(y_pred, -0.9999, 1e10)
         logits_perm = y_pred
         true_counts_perm = y_true
 
@@ -176,20 +179,18 @@ class multinomialnll_mse(tf.keras.losses.Loss):
                                                 logits=logits_perm)
         # get the sequence length for normalization
         #seqlen = tf.cast(tf.shape(y_true[0])[0],dtype=tf.float32)
-        seqlen = tf.cast(tf.shape(y_true)[0], dtype=tf.float32)
+        seqlen = tf.cast(tf.shape(y_true)[0], dtype=tf.float32)  # so this is intended to get the batch size
 
-        tf.print(tf.shape(y_true), tf.shape(y_true)[0], tf.shape(y_true)[1], tf.cast(tf.shape(y_true)[0], dtype=tf.float32), tf.cast(tf.shape(y_true[0])[0],dtype=tf.float32))
+        true_counts_perm = y_true  # this should be Batch x Output_dim
 
-        tf.print("#seqlen", tf.cast(tf.shape(y_true[0])[0],dtype=tf.float32))
-        tf.print("seqlen", tf.cast(tf.shape(y_true)[0], dtype=tf.float32))
-        mult_loss = -tf.reduce_sum(dist.log_prob(true_counts_perm)) / seqlen
+        mult_loss = -tf.reduce_sum(dist.log_prob(true_counts_perm)) / seqlen # dist.log_prob(true_counts_perm) will be a vector with batch size
 
         #MSE part of loss function
         #mse_loss = tf.keras.losses.MSE(y_true[1], y_pred[1])
 
         log_true = tf.math.log(y_true + 1)
         log_pred = tf.math.log(y_pred + 1)
-        
+
         mse_loss = tf.keras.losses.MSE(log_true, log_pred)
 
         #mse_loss = tf.keras.losses.MSE(y_true, y_pred)
@@ -200,8 +201,10 @@ class multinomialnll_mse(tf.keras.losses.Loss):
         #sum with weight
         total_loss = mult_loss + self.alpha*mse_loss
 
-        '''#tf.print("seqlen: ", seqlen, "true_counts_perm_shape: ", tf.shape(true_counts_perm), "counts_per_example: ",
+
+        #tf.print("seqlen: ", seqlen, "true_counts_perm_shape: ", tf.shape(true_counts_perm), "counts_per_example: ",
         #         tf.shape(counts_per_example), "mult_loss: ", mult_loss, "mse_loss: ", mse_loss, "total_loss: ", total_loss)
+        '''
 
 
         ### BPNET implementation
@@ -214,10 +217,12 @@ class multinomialnll_mse(tf.keras.losses.Loss):
         # multinomial loss
         multinomial_loss = multinomialnll()(y_true, logits)
 
+        '''
         np.savetxt("/Users/war9qi/Project_Data/maxATAC_sample/ELK1_quantitative_output/y_true.tsv", y_true,
                    delimiter='\t')
         np.savetxt("/Users/war9qi/Project_Data/maxATAC_sample/ELK1_quantitative_output/y_pred.tsv", y_pred,
                    delimiter='\t')
+        '''
 
         MSE_loss = tf.keras.losses.MSE([K.log(1 + K.sum(y_true, axis=(-2, -1)))],
                                        [K.log(1 + K.sum(y_pred, axis=(-2, -1)))])
@@ -225,6 +230,9 @@ class multinomialnll_mse(tf.keras.losses.Loss):
 
         bpnet_loss = multinomial_loss + self.alpha * MSE_loss
 
+        total_loss = bpnet_loss
+
+        '''
         if self.counter in range(0,40):
             epoch = 1
         elif self.counter in range(40,80):
@@ -386,5 +394,19 @@ class poissonnll(tf.keras.losses.Loss):
         loss = tf.nn.log_poisson_loss(log_input=logInput,
                                    targets=Target,
                                    compute_full_loss=True)
+
+        return loss
+
+
+class kl_divergence(tf.keras.losses.Loss):
+    def __init__(self, name="kl_divergence", **kwargs):
+        super().__init__(name=name)
+
+    def call(self, y_true, y_pred):
+
+        y_pred = tf.clip_by_value(y_pred, -0.9999, 1e10)
+        y_true = tf.clip_by_value(y_true, -0.9999, 1e10)
+
+        loss = keras.losses.kl_divergence(y_true, y_pred)
 
         return loss
