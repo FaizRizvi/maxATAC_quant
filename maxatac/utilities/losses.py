@@ -413,6 +413,7 @@ class kl_divergence(tf.keras.losses.Loss):
 class cauchy_lf(tf.keras.losses.Loss):
     def __init__(self, name="cauchy_lf", **kwargs):
         super().__init__(name=name)
+        self.gamma = 0.9
 
     def call(self, y_true, y_pred):
         """
@@ -421,15 +422,15 @@ class cauchy_lf(tf.keras.losses.Loss):
         Arguments:
         y_true -- tensor of true values
         y_pred -- tensor of predicted values
-        gamma -- scale parameter, controls the robustness to outliers
+        gamma -- scale parameter, controls the robustness to outliers, 0.1 < gamma < 10
 
         Returns:
-        loss -- computed Cauchy loss
+        computed Cauchy loss
         """
         # Compute squared error
         squared_error = tf.square(y_true - y_pred)
 
         # Compute the Cauchy loss
-        loss = tf.math.log(1 + squared_error / (gamma ** 2))
+        loss = tf.math.log(1 + squared_error / (self.gamma ** 2))
 
         return tf.reduce_mean(loss)  # Return the mean loss
