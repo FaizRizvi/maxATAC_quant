@@ -385,8 +385,7 @@ class poissonnll(tf.keras.losses.Loss):
 
     def call(self, y_true, y_pred):
 
-        #logInput = np.log(y_pred)
-        y_pred = tf.clip_by_value(y_pred, -0.9999, 1e10)
+        #y_pred = tf.clip_by_value(y_pred, -0.9999, 1e10)
         logInput = tf.math.log(y_pred + 1)
         
         Target = y_true
@@ -403,10 +402,34 @@ class kl_divergence(tf.keras.losses.Loss):
         super().__init__(name=name)
 
     def call(self, y_true, y_pred):
+        from sklearn.preprocessing import normalize
 
-        y_pred = tf.clip_by_value(y_pred, -0.9999, 1e10)
-        y_true = tf.clip_by_value(y_true, -0.9999, 1e10)
-
-        loss = keras.losses.kl_divergence(y_true, y_pred)
+        # KLD call
+        loss = tf.keras.losses.KLDivergence().call(y_true=normalize(y_true, norm='l1', axis=1),
+                                                   y_pred=normalize(y_pred, norm='l1', axis=1))
 
         return loss
+
+class cauchy_lf(tf.keras.losses.Loss):
+    def __init__(self, name="cauchy_lf", **kwargs):
+        super().__init__(name=name)
+
+    def call(self, y_true, y_pred):
+        """
+        Compute the Cauchy loss function.
+
+        Arguments:
+        y_true -- tensor of true values
+        y_pred -- tensor of predicted values
+        gamma -- scale parameter, controls the robustness to outliers
+
+        Returns:
+        loss -- computed Cauchy loss
+        """
+        # Compute squared error
+        squared_error = tf.square(y_true - y_pred)
+
+        # Compute the Cauchy loss
+        loss = tf.math.log(1 + squared_error / (gamma ** 2))
+
+        return tf.reduce_mean(loss)  # Return the mean loss

@@ -332,6 +332,15 @@ def get_dilated_cnn(
         elif loss == "poissonnll":
             from maxatac.utilities.losses import poissonnll
             loss_function = poissonnll()
+
+        elif loss == "kl_divergence":
+            from maxatac.utilities.losses import kl_divergence
+            loss_function = kl_divergence()
+
+        elif loss == "cauchy_lf":
+            from maxatac.utilities.losses import cauchy_lf
+            loss_function = cauchy_lf()
+
         else:
             from maxatac.utilities.losses import mse
             loss = "mse"
