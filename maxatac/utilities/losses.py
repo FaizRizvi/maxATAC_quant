@@ -405,8 +405,11 @@ class kl_divergence(tf.keras.losses.Loss):
         from sklearn.preprocessing import normalize
 
         # KLD call
-        loss = tf.keras.losses.KLDivergence().call(y_true=normalize(y_true, norm='l1', axis=1),
-                                                   y_pred=normalize(y_pred, norm='l1', axis=1))
+        '''loss = tf.keras.losses.KLDivergence().call(y_true=normalize(y_true, norm='l1', axis=1),
+                                                   y_pred=normalize(y_pred, norm='l1', axis=1))'''
+
+        loss  = tf.keras.losses.KLDivergence().call(y_true=tf.linalg.normalize(y_true, ord=1, axis=1)[0],
+                                                    y_pred=tf.linalg.normalize(y_pred, ord=1, axis=1)[0])
 
         return loss
 
@@ -426,6 +429,9 @@ class cauchy_lf(tf.keras.losses.Loss):
 
         Returns:
         computed Cauchy loss
+        
+        Thamsanqa Mlotshwa et al., Cauchy Loss Function: Robustness Under Gaussian and Cauchy Noise?
+        https://arxiv.org/pdf/2302.07238
         """
         # Compute squared error
         squared_error = tf.square(y_true - y_pred)
