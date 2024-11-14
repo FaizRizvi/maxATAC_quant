@@ -385,9 +385,9 @@ class poissonnll(tf.keras.losses.Loss):
 
     def call(self, y_true, y_pred):
 
-        #y_pred = tf.clip_by_value(y_pred, -0.9999, 1e10)
+        y_pred = tf.clip_by_value(y_pred, -0.9999, 1e10)
         logInput = tf.math.log(y_pred + 1)
-        
+
         Target = y_true
 
         loss = tf.nn.log_poisson_loss(log_input=logInput,
@@ -405,11 +405,29 @@ class kl_divergence(tf.keras.losses.Loss):
         from sklearn.preprocessing import normalize
 
         # KLD call
-        '''loss = tf.keras.losses.KLDivergence().call(y_true=normalize(y_true, norm='l1', axis=1),
-                                                   y_pred=normalize(y_pred, norm='l1', axis=1))'''
 
-        loss  = tf.keras.losses.KLDivergence().call(y_true=tf.linalg.normalize(y_true, ord=1, axis=1)[0],
-                                                    y_pred=tf.linalg.normalize(y_pred, ord=1, axis=1)[0])
+        '''loss  = tf.keras.losses.KLDivergence().call(y_true=tf.linalg.normalize(y_true, ord=1, axis=1)[0],
+                                                    y_pred=tf.linalg.normalize(y_pred, ord=1, axis=1)[0])'''
+
+        epsilon = 1e-8
+        y_true = tf.where(tf.math.is_nan(y_true), epsilon * tf.ones_like(y_true), y_true)
+        y_pred = tf.where(tf.math.is_nan(y_pred), epsilon * tf.ones_like(y_pred), y_pred)
+
+        y_true = tf.where(tf.math.is_inf(y_true), epsilon * tf.ones_like(y_true), y_true)
+        y_pred = tf.where(tf.math.is_inf(y_pred), epsilon * tf.ones_like(y_pred), y_pred)
+
+        y_true = tf.clip_by_value(y_true, epsilon, 1.0)
+        y_pred = tf.clip_by_value(y_pred, epsilon, 1.0)
+
+        y_true_normalized = tf.linalg.normalize(y_true, ord=1, axis=1)[0]
+        y_pred_normalized = tf.linalg.normalize(y_pred, ord=1, axis=1)[0]
+
+
+        log_y_pred = tf.math.log(y_pred_normalized)
+
+        # Compute the KL divergence manually
+        loss = tf.reduce_sum(y_true_normalized * log_y_pred, axis=1)
+
 
         return loss
 
