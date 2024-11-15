@@ -388,7 +388,7 @@ class poissonnll(tf.keras.losses.Loss):
         y_pred = tf.clip_by_value(y_pred, -0.9999, 1e10)
         logInput = tf.math.log(y_pred + 1)
 
-        Target = y_true
+        Target = y_true + 1
 
         loss = tf.nn.log_poisson_loss(log_input=logInput,
                                    targets=Target,
