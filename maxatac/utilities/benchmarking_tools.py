@@ -137,21 +137,52 @@ class calculate_R2_pearson_spearman(object):
         Calculate the R2, Pearson, and Spearman Correlation for Quantitative Predictions
         """
         logging.info("Calculate R2")
-        R2_score = r2_score(
+        quant_gold_arr = self.quant_goldstandard_array[self.blacklist_mask]
+        pred_arr = self.prediction_array[self.blacklist_mask]
+
+        big_arr = np.array([quant_gold_arr, pred_arr])
+        temp_df = pd.DataFrame(data=big_arr)
+
+        # locate cols with 0s to remove
+        columns_to_drop = temp_df.columns[(temp_df.iloc[0] == 0)]
+        filtered_temp_df = temp_df.drop(columns=columns_to_drop)
+
+        columns_to_drop2 = filtered_temp_df.columns[(filtered_temp_df.iloc[1] == 0)]
+        filtered_temp_df2 = filtered_temp_df.drop(columns=columns_to_drop2)
+
+        filtered_quant_gold_arr = filtered_temp_df2.iloc[0].to_numpy()
+        filtered_pred_arr = filtered_temp_df2.iloc[1].to_numpy()
+
+        '''R2_score = r2_score(
             self.quant_goldstandard_array[self.blacklist_mask],
             self.prediction_array[self.blacklist_mask]
+            )'''
+
+        R2_score = r2_score(
+            filtered_quant_gold_arr,
+            filtered_pred_arr
             )
 
         logging.info("Calculate Pearson Correlation")
-        pearson_score, pearson_pval = pearsonr(
+        '''pearson_score, pearson_pval = pearsonr(
             self.quant_goldstandard_array[self.blacklist_mask],
             self.prediction_array[self.blacklist_mask]
+            )'''
+
+        pearson_score, pearson_pval = pearsonr(
+            filtered_quant_gold_arr,
+            filtered_pred_arr
             )
 
         logging.info("Calculate Spearman Correlation")
-        spearman_score, spearman_pval = spearmanr(
+        '''spearman_score, spearman_pval = spearmanr(
             self.quant_goldstandard_array[self.blacklist_mask],
             self.prediction_array[self.blacklist_mask]
+            )'''
+
+        spearman_score, spearman_pval = spearmanr(
+            filtered_quant_gold_arr,
+            filtered_pred_arr
             )
 
         R2_Sp_P_df = pd.DataFrame([[R2_score, pearson_score, pearson_pval, spearman_score, spearman_pval]],
@@ -160,8 +191,30 @@ class calculate_R2_pearson_spearman(object):
         R2_Sp_P_df.to_csv(self.results_location, sep='\t', index=None)
 
     def __plot__(self):
-        y_pred=self.prediction_array[self.blacklist_mask]
-        y_obs=self.quant_goldstandard_array[self.blacklist_mask]
+
+        ###
+        quant_gold_arr = self.quant_goldstandard_array[self.blacklist_mask]
+        pred_arr = self.prediction_array[self.blacklist_mask]
+
+        big_arr = np.array([quant_gold_arr, pred_arr])
+        temp_df = pd.DataFrame(data=big_arr)
+
+        # locate cols with 0s to remove
+
+        columns_to_drop = temp_df.columns[(temp_df.iloc[0] == 0)]
+        filtered_temp_df = temp_df.drop(columns=columns_to_drop)
+
+        columns_to_drop2 = filtered_temp_df.columns[(filtered_temp_df.iloc[1] == 0)]
+        filtered_temp_df2 = filtered_temp_df.drop(columns=columns_to_drop2)
+
+        filtered_quant_gold_arr = filtered_temp_df2.iloc[0].to_numpy()
+        filtered_pred_arr = filtered_temp_df2.iloc[1].to_numpy()
+        ###
+
+
+
+        y_pred= filtered_pred_arr #self.prediction_array[self.blacklist_mask]
+        y_obs= filtered_quant_gold_arr #self.quant_goldstandard_array[self.blacklist_mask]
 
         data={'y_obs': y_obs, 'y_pred': y_pred}
         plot_df=pd.DataFrame(data)
@@ -392,6 +445,75 @@ class ChromosomeAUPRC(object):
 
         # Write the AUPRC stats to a dataframe
         self.PR_CURVE_DF.to_csv(self.results_location, sep="\t", header=True, index=False)
+
+
+        # Calculate R2, Spearman, Pearson for Binary
+
+        ### filter out 0s
+        gold_arr = self.goldstandard_array[self.blacklist_mask]
+        pred_arr = self.prediction_array[self.blacklist_mask]
+
+        big_arr = np.array([gold_arr, pred_arr])
+        temp_df = pd.DataFrame(data=big_arr)
+
+        # locate cols with 0s to remove
+        columns_to_drop = temp_df.columns[(temp_df.iloc[0] == 0)]
+        filtered_temp_df = temp_df.drop(columns=columns_to_drop)
+
+        columns_to_drop2 = filtered_temp_df.columns[(filtered_temp_df.iloc[1] == 0)]
+        filtered_temp_df2 = filtered_temp_df.drop(columns=columns_to_drop2)
+
+        filtered_gold_arr = filtered_temp_df2.iloc[0].to_numpy()
+        filtered_pred_arr = filtered_temp_df2.iloc[1].to_numpy()
+        ###
+
+        logging.info("Calculate R2, Pearson, and Spearman Correlation for Binary Preds")
+
+        R2_score = r2_score(
+        filtered_gold_arr,
+        filtered_pred_arr
+        )
+
+        pearson_score, pearson_pval = pearsonr(
+        filtered_gold_arr,
+        filtered_pred_arr
+        )
+
+        spearman_score, spearman_pval = spearmanr(
+        filtered_gold_arr,
+        filtered_pred_arr
+        )
+
+        R2_Sp_P_df = pd.DataFrame([[R2_score, pearson_score, pearson_pval, spearman_score, spearman_pval]],
+        columns = ['R2', 'pearson', 'pearson_pval', 'spearman', 'spearman_pval'])
+
+        results_filename_2 = "_".join(["_".join(self.results_location.split("_")[:-1]),  "_r2_pearson_spearman_binary_preds.tsv"])
+
+        R2_Sp_P_df.to_csv(results_filename_2, sep='\t', index=None)
+
+        # plot
+
+        y_pred = filtered_pred_arr
+        y_obs = filtered_gold_arr
+
+        data = {'y_obs': y_obs, 'y_pred': y_pred}
+        plot_df = pd.DataFrame(data)
+
+        # Drop Rows containing 0s
+        plot_df = plot_df[plot_df.y_obs != 0]
+        plot_df = plot_df[plot_df.y_pred != 0]
+
+        fig, ax = plt.subplots()
+        ax.scatter(plot_df.y_obs, plot_df.y_pred)
+        plot_location = "_".join(["_".join(self.results_location.split("_")[:-1]), "scatterPlot.png"])
+
+        fig.savefig(plot_location,
+                    bbox_inches="tight"
+                    )
+
+        plot_df_location = "_".join(["_".join(self.results_location.split("_")[:-1]), "scatterPlot_df.tsv"])
+        plot_df.to_csv(plot_df_location, sep='\t', index=None)
+
 
     def __plot(self, cmap="viridis"):
         points = np.array([self.recall, self.precision]).T.reshape(-1, 1, 2)
