@@ -147,11 +147,11 @@ class calculate_R2_pearson_spearman(object):
         columns_to_drop = temp_df.columns[(temp_df.iloc[0] == 0)]
         filtered_temp_df = temp_df.drop(columns=columns_to_drop)
 
-        #columns_to_drop2 = filtered_temp_df.columns[(filtered_temp_df.iloc[1] == 0)]
-        #filtered_temp_df2 = filtered_temp_df.drop(columns=columns_to_drop2)
+        columns_to_drop2 = filtered_temp_df.columns[(filtered_temp_df.iloc[1] == 0)]
+        filtered_temp_df2 = filtered_temp_df.drop(columns=columns_to_drop2)
 
-        filtered_quant_gold_arr = filtered_temp_df.iloc[0].to_numpy()
-        filtered_pred_arr = filtered_temp_df.iloc[1].to_numpy()
+        filtered_quant_gold_arr = filtered_temp_df2.iloc[0].to_numpy()
+        filtered_pred_arr = filtered_temp_df2.iloc[1].to_numpy()
 
         '''R2_score = r2_score(
             self.quant_goldstandard_array[self.blacklist_mask],
@@ -204,11 +204,11 @@ class calculate_R2_pearson_spearman(object):
         columns_to_drop = temp_df.columns[(temp_df.iloc[0] == 0)]
         filtered_temp_df = temp_df.drop(columns=columns_to_drop)
 
-        #columns_to_drop2 = filtered_temp_df.columns[(filtered_temp_df.iloc[1] == 0)]
-        #filtered_temp_df2 = filtered_temp_df.drop(columns=columns_to_drop2)
+        columns_to_drop2 = filtered_temp_df.columns[(filtered_temp_df.iloc[1] == 0)]
+        filtered_temp_df2 = filtered_temp_df.drop(columns=columns_to_drop2)
 
-        filtered_quant_gold_arr = filtered_temp_df.iloc[0].to_numpy()
-        filtered_pred_arr = filtered_temp_df.iloc[1].to_numpy()
+        filtered_quant_gold_arr = filtered_temp_df2.iloc[0].to_numpy()
+        filtered_pred_arr = filtered_temp_df2.iloc[1].to_numpy()
         ###
 
 
@@ -449,39 +449,24 @@ class ChromosomeAUPRC(object):
 
         # Calculate R2, Spearman, Pearson for Binary
 
-        ### filter out 0s
         gold_arr = self.goldstandard_array[self.blacklist_mask]
         pred_arr = self.prediction_array[self.blacklist_mask]
-
-        big_arr = np.array([gold_arr, pred_arr])
-        temp_df = pd.DataFrame(data=big_arr)
-
-        # locate cols with 0s to remove
-        columns_to_drop = temp_df.columns[(temp_df.iloc[0] == 0)]
-        filtered_temp_df = temp_df.drop(columns=columns_to_drop)
-
-        #columns_to_drop2 = filtered_temp_df.columns[(filtered_temp_df.iloc[1] == 0)]
-        #filtered_temp_df2 = filtered_temp_df.drop(columns=columns_to_drop2)
-
-        filtered_gold_arr = filtered_temp_df.iloc[0].to_numpy()
-        filtered_pred_arr = filtered_temp_df.iloc[1].to_numpy()
-        ###
 
         logging.info("Calculate R2, Pearson, and Spearman Correlation for Binary Preds")
 
         R2_score = r2_score(
-        filtered_gold_arr,
-        filtered_pred_arr
+        gold_arr,
+        pred_arr
         )
 
         pearson_score, pearson_pval = pearsonr(
-        filtered_gold_arr,
-        filtered_pred_arr
+        gold_arr,
+        pred_arr
         )
 
         spearman_score, spearman_pval = spearmanr(
-        filtered_gold_arr,
-        filtered_pred_arr
+        gold_arr,
+        pred_arr
         )
 
         R2_Sp_P_df = pd.DataFrame([[R2_score, pearson_score, pearson_pval, spearman_score, spearman_pval]],
