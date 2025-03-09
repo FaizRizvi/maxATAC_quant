@@ -478,8 +478,8 @@ class ChromosomeAUPRC(object):
 
         # plot
 
-        y_pred = filtered_pred_arr
-        y_obs = filtered_gold_arr
+        y_pred = pred_arr
+        y_obs = gold_arr
 
         data = {'y_obs': y_obs, 'y_pred': y_pred}
         plot_df = pd.DataFrame(data)
