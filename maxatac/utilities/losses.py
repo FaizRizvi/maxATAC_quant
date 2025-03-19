@@ -455,6 +455,6 @@ class cauchy_lf(tf.keras.losses.Loss):
         squared_error = tf.square(y_true - y_pred)
 
         # Compute the Cauchy loss
-        loss = tf.math.log(1 + squared_error / (self.gamma ** 2))
+        loss = ((self.gamma ** 2)/2) * tf.math.log(1 + squared_error / (self.gamma ** 2))
 
         return tf.reduce_mean(loss)  # Return the mean loss
