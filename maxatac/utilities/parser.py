@@ -733,6 +733,12 @@ def get_parser():
                                   help="Quantitative Gold Standard file"
                                   )
 
+    benchmark_parser.add_argument("--pred_gs_meta",
+                                  dest="pred_gs_meta",
+                                  type=str,
+                                  help="Meta file of predictions and gold standards for correlation calculations"
+                                  )
+
     benchmark_parser.add_argument("--gold_standard",
                                   dest="gold_standard",
                                   type=str,
@@ -1205,7 +1211,7 @@ def parse_arguments(argsl, cwd_abs_path=None):
                 "minimum", "test_cell_lines", "rand_ratio",
                 "train_tf", "arch", "quant","batch_size", "save_roi",
                 "val_batch_size", "target_scale_factor", "blacklist", "chrom_sizes",
-                "output_activation", "dense", "shuffle_cell_type", "rev_comp", "genome", "loss"
+                "output_activation", "dense", "shuffle_cell_type", "rev_comp", "genome", "loss", "pred_gs_meta"
             ],
             cwd_abs_path
         )

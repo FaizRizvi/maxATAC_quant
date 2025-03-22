@@ -247,3 +247,43 @@ def filter_chrom_sizes(chrom_sizes_path, chromosomes, target_chrom_sizes_file):
     df.to_csv(target_chrom_sizes_file, sep="\t", header=False, index=False)
     
     return target_chrom_sizes_file
+
+def import_prediction_array_fn(prediction_stream, chromosome, chromosome_length, agg_function, bin_count):
+    """
+    Import the chromosome signal from the predictions bigwig file and convert to a numpy array.
+    """
+
+    # Get the bin stats from the prediction array
+
+    prediction_array = np.nan_to_num(np.array(prediction_stream.stats(chromosome,
+                                                                           0,
+                                                                           chromosome_length,
+                                                                           type=agg_function,
+                                                                           nBins=bin_count,
+                                                                           exact=True),
+                                              dtype=float  # need it to have NaN instead of None
+                                                   )
+                                          )
+
+    return prediction_array
+
+
+def import_quant_goldstandard_array_fn(quant_goldstandard_stream, chromosome, chromosome_length, agg_function, bin_count):
+    """
+    Import the chromosome signal from the gold standard bigwig file and convert to a numpy array.
+    """
+
+    # Get the bin stats from the gold standard array
+
+    quant_goldstandard_array = np.nan_to_num(np.array(quant_goldstandard_stream.stats(chromosome,
+                                                                                           0,
+                                                                                           chromosome_length,
+                                                                                           type=agg_function,
+                                                                                           nBins=bin_count,
+                                                                                           exact=True
+                                                                                           ),
+                                                           dtype=float  # need it to have NaN instead of None
+                                                           )
+                                                  ) # Commented out to keep values non-boolean:  > 0  # to convert to boolean array
+
+    return quant_goldstandard_array

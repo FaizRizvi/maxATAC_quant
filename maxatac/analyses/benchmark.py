@@ -61,7 +61,8 @@ def run_benchmarking(args):
                                           args.bin_size,
                                           args.agg_function,
                                           results_filename2,
-                                          args.blacklist_bw
+                                          args.blacklist_bw,
+                                          args.pred_gs_meta
                                           )
     else:
         for chromosome in args.chromosomes:

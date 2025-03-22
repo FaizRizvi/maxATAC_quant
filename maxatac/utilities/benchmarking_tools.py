@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.collections import LineCollection
-from maxatac.utilities.genome_tools import load_bigwig, chromosome_blacklist_mask
+from maxatac.utilities.genome_tools import load_bigwig, chromosome_blacklist_mask, import_prediction_array_fn, import_quant_goldstandard_array_fn
 from sklearn import metrics
 from sklearn.metrics import precision_recall_curve, r2_score
 from scipy import stats
@@ -31,7 +31,8 @@ class calculate_R2_pearson_spearman(object):
                  bin_size,
                  agg_function,
                  results_location,
-                 blacklist_bw
+                 blacklist_bw,
+                 pred_gs_meta
                  ):
 
         """
@@ -49,6 +50,7 @@ class calculate_R2_pearson_spearman(object):
         self.bin_count = int(int(self.chromosome_length) / int(bin_size))  # need to floor the number
         self.bin_size = bin_size
         self.agg_function = agg_function
+        self.pred_gs_meta = pred_gs_meta
 
         # This has been modified
         self.blacklist_mask = chromosome_blacklist_mask(blacklist_bw,
@@ -136,22 +138,59 @@ class calculate_R2_pearson_spearman(object):
         """
         Calculate the R2, Pearson, and Spearman Correlation for Quantitative Predictions
         """
+
+
+        ### Find the Union of all Non-zero Regions for CT_TF prediction and GS
+        dfdf = pd.read_csv(self.pred_gs_meta, sep='\t')
+        dim = dfdf.shape[0]
+
+        all_data=[]
+        for i in range(dim):
+
+            load_pred = load_bigwig(dfdf.prediction[i])
+            pred_array = import_prediction_array_fn(load_pred, self.chromosome, self.chromosome_length, self.agg_function,
+                                    self.bin_count)
+
+            load_quant_gs = load_bigwig(dfdf.gold_standard[i])
+            quant_gs_array = import_quant_goldstandard_array_fn(load_quant_gs, self.chromosome, self.chromosome_length, self.agg_function, self.bin_count)
+
+            pred_array_bl = pred_array[self.blacklist_mask]
+            quant_gs_array_bl = quant_gs_array[self.blacklist_mask]
+
+            big_arr = np.array([quant_gs_array_bl, pred_array_bl])
+            temp_df = pd.DataFrame(data=big_arr)
+            all_data.append(temp_df)
+
+        all_data_df = pd.concat(all_data)
+
+
         logging.info("Calculate R2")
+
         quant_gold_arr = self.quant_goldstandard_array[self.blacklist_mask]
         pred_arr = self.prediction_array[self.blacklist_mask]
 
         big_arr = np.array([quant_gold_arr, pred_arr])
         temp_df = pd.DataFrame(data=big_arr)
 
+        # Vertically concat temp_df (quant_gold arr and pred_array of interest) with all the quant gs and preds df in all_data_df
+        big_data_df = pd.concat([temp_df, all_data_df], ignore_index=True)
+
         # locate cols with 0s to remove
-        columns_to_drop = temp_df.columns[(temp_df.iloc[0] == 0)]
-        filtered_temp_df = temp_df.drop(columns=columns_to_drop)
+        cols_to_drop = (big_data_df == 0).any()
+        filtered_big_data_df = big_data_df.loc[:, ~cols_to_drop]
 
-        columns_to_drop2 = filtered_temp_df.columns[(filtered_temp_df.iloc[1] == 0)]
-        filtered_temp_df2 = filtered_temp_df.drop(columns=columns_to_drop2)
+        # locate cols with 0s to remove
+        # columns_to_drop = temp_df.columns[(temp_df.iloc[0] == 0)]
+        # filtered_temp_df = temp_df.drop(columns=columns_to_drop)
 
-        filtered_quant_gold_arr = filtered_temp_df2.iloc[0].to_numpy()
-        filtered_pred_arr = filtered_temp_df2.iloc[1].to_numpy()
+        # columns_to_drop2 = filtered_temp_df.columns[(filtered_temp_df.iloc[1] == 0)]
+        # filtered_temp_df2 = filtered_temp_df.drop(columns=columns_to_drop2)
+
+        filtered_quant_gold_arr = filtered_big_data_df.iloc[0].to_numpy()
+        filtered_pred_arr = filtered_big_data_df.iloc[1].to_numpy()
+
+        self.filtered_quant_gold_arr = filtered_quant_gold_arr
+        self.filtered_pred_arr = filtered_pred_arr
 
         '''R2_score = r2_score(
             self.quant_goldstandard_array[self.blacklist_mask],
@@ -192,7 +231,7 @@ class calculate_R2_pearson_spearman(object):
 
     def __plot__(self):
 
-        ###
+        '''###
         quant_gold_arr = self.quant_goldstandard_array[self.blacklist_mask]
         pred_arr = self.prediction_array[self.blacklist_mask]
 
@@ -209,7 +248,10 @@ class calculate_R2_pearson_spearman(object):
 
         filtered_quant_gold_arr = filtered_temp_df2.iloc[0].to_numpy()
         filtered_pred_arr = filtered_temp_df2.iloc[1].to_numpy()
-        ###
+        ###'''
+
+        filtered_quant_gold_arr = self.filtered_quant_gold_arr
+        filtered_pred_arr = self.filtered_pred_arr
 
 
 
