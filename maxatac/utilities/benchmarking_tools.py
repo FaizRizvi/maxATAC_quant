@@ -228,6 +228,9 @@ class calculate_R2_pearson_spearman(object):
         self.filtered_quant_gold_arr = filtered_quant_gold_arr
         self.filtered_pred_arr = filtered_pred_arr
 
+        print(self.filtered_quant_gold_arr.shape, self.filtered_quant_gold_arr)
+        print(self.filtered_pred_arr.shape, self.filtered_pred_arr)
+
         '''R2_score = r2_score(
             self.quant_goldstandard_array[self.blacklist_mask],
             self.prediction_array[self.blacklist_mask]
