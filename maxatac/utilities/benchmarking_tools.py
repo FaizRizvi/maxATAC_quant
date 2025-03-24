@@ -10,6 +10,24 @@ from scipy import stats
 from scipy.stats import pearsonr, spearmanr
 from maxatac.utilities.system_tools import remove_tags
 import pybedtools
+from multiprocessing import Pool
+import multiprocessing
+
+def process_row(i, dfdf, blacklist_mask, chromosome, chromosome_length, agg_function, bin_count):
+    load_pred = load_bigwig(dfdf.prediction[i])
+    pred_array = import_prediction_array_fn(load_pred, chromosome, chromosome_length, agg_function, bin_count)
+
+    load_quant_gs = load_bigwig(dfdf.gold_standard[i])
+    quant_gs_array = import_quant_goldstandard_array_fn(load_quant_gs, chromosome, chromosome_length,
+                                                        agg_function, bin_count)
+
+    pred_array_bl = pred_array[blacklist_mask]
+    quant_gs_array_bl = quant_gs_array[blacklist_mask]
+
+    big_arr = np.array([quant_gs_array_bl, pred_array_bl])
+    temp_df = pd.DataFrame(data=big_arr)
+
+    return temp_df
 
 class calculate_R2_pearson_spearman(object):
     """
@@ -138,9 +156,26 @@ class calculate_R2_pearson_spearman(object):
         """
         Calculate the R2, Pearson, and Spearman Correlation for Quantitative Predictions
         """
+        dfdf = pd.read_csv(self.pred_gs_meta, sep='\t')
+        dim = dfdf.shape[0]
+
+        blacklist_mask = self.blacklist_mask  # Assuming this is a member variable
+        chromosome = self.chromosome  # Assuming this is a member variable
+        chromosome_length = self.chromosome_length  # Assuming this is a member variable
+        agg_function = self.agg_function  # Assuming this is a member variable
+        bin_count = self.bin_count  # Assuming this is a member variable
+
+        # Using Pool to parallelize the loop
+        with Pool(int(multiprocessing.cpu_count())) as pool:
+            all_data = pool.starmap(process_row,
+                                    [(i, dfdf, blacklist_mask, chromosome, chromosome_length, agg_function, bin_count)
+                                     for i in range(dim)])
+
+        # Concatenate the results into a final DataFrame
+        all_data_df = pd.concat(all_data)
 
 
-        ### Find the Union of all Non-zero Regions for CT_TF prediction and GS
+        ''''### Find the Union of all Non-zero Regions for CT_TF prediction and GS
         dfdf = pd.read_csv(self.pred_gs_meta, sep='\t')
         dim = dfdf.shape[0]
 
@@ -162,6 +197,7 @@ class calculate_R2_pearson_spearman(object):
             all_data.append(temp_df)
 
         all_data_df = pd.concat(all_data)
+        '''
 
 
         logging.info("Calculate R2")
