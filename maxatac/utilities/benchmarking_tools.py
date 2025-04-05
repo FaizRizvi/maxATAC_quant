@@ -215,6 +215,14 @@ class calculate_R2_pearson_spearman(object):
         cols_to_drop = (big_data_df == 0).any()
         filtered_big_data_df = big_data_df.loc[:, ~cols_to_drop]
 
+        tot_bins_print=big_data_df.shape[1]
+        tot_bins_drop_print=cols_to_drop[cols_to_drop == True].shape[0]
+        tot_bins_after_filter_print=filtered_big_data_df.shape[1]
+
+        logging.info(f"Total bins: {tot_bins_print}")
+        logging.info(f"Total bins removed: {tot_bins_drop_print}")
+        logging.info(f"Total bins after filtering: {tot_bins_after_filter_print}")
+
         # locate cols with 0s to remove
         # columns_to_drop = temp_df.columns[(temp_df.iloc[0] == 0)]
         # filtered_temp_df = temp_df.drop(columns=columns_to_drop)
