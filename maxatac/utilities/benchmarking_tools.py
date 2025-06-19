@@ -208,11 +208,25 @@ class calculate_R2_pearson_spearman(object):
         big_arr = np.array([quant_gold_arr, pred_arr])
         temp_df = pd.DataFrame(data=big_arr)
 
+        # Filtering by all LFC preds greater than 1
+        # these are all bins that have value greater than 1 in LFC pred returns true false bool series
+        # create a mask
+        m1 = temp_df.loc[1] > 1
+        mm = ~m1 # complement, all regions that are <= 1
+
+        # finds all bins with a 0 to exclude
+        m2 = (all_data_df == 0).any()
+
+        cols_to_drop = mm & m2 # this mask corresponds to all bins that have 0s in the all_data_df and all LFC <= 1 to be removed
+
+
+
         # Vertically concat temp_df (quant_gold arr and pred_array of interest) with all the quant gs and preds df in all_data_df
         big_data_df = pd.concat([temp_df, all_data_df], ignore_index=True)
 
-        # locate cols with 0s to remove
-        cols_to_drop = (big_data_df == 0).any()
+        # this was the old way to filter # locate cols with 0s to remove
+        # Upgrading the way we filter 0s # cols_to_drop = (big_data_df == 0).any()
+
         filtered_big_data_df = big_data_df.loc[:, ~cols_to_drop]
 
         tot_bins_print=big_data_df.shape[1]
