@@ -14,17 +14,19 @@ from multiprocessing import Pool
 import multiprocessing
 
 def process_row(i, dfdf, blacklist_mask, chromosome, chromosome_length, agg_function, bin_count):
-    load_pred = load_bigwig(dfdf.prediction[i])
-    pred_array = import_prediction_array_fn(load_pred, chromosome, chromosome_length, agg_function, bin_count)
+    #load_pred = load_bigwig(dfdf.prediction[i])
+    #pred_array = import_prediction_array_fn(load_pred, chromosome, chromosome_length, agg_function, bin_count)
 
     load_quant_gs = load_bigwig(dfdf.gold_standard[i])
     quant_gs_array = import_quant_goldstandard_array_fn(load_quant_gs, chromosome, chromosome_length,
                                                         agg_function, bin_count)
 
-    pred_array_bl = pred_array[blacklist_mask]
+    #pred_array_bl = pred_array[blacklist_mask]
     quant_gs_array_bl = quant_gs_array[blacklist_mask]
 
-    big_arr = np.array([quant_gs_array_bl, pred_array_bl])
+    #big_arr = np.array([quant_gs_array_bl, pred_array_bl])
+
+    big_arr = np.array([quant_gs_array_bl])
     temp_df = pd.DataFrame(data=big_arr)
 
     return temp_df
