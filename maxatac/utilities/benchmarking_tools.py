@@ -158,8 +158,8 @@ class calculate_R2_pearson_spearman(object):
         """
         Calculate the R2, Pearson, and Spearman Correlation for Quantitative Predictions
         """
-        dfdf = pd.read_csv(self.pred_gs_meta, sep='\t')
-        dim = dfdf.shape[0]
+        ### dfdf = pd.read_csv(self.pred_gs_meta, sep='\t')
+        ### dim = dfdf.shape[0]
 
         blacklist_mask = self.blacklist_mask  # Assuming this is a member variable
         chromosome = self.chromosome  # Assuming this is a member variable
@@ -167,14 +167,14 @@ class calculate_R2_pearson_spearman(object):
         agg_function = self.agg_function  # Assuming this is a member variable
         bin_count = self.bin_count  # Assuming this is a member variable
 
-        # Using Pool to parallelize the loop
+        ''''# Using Pool to parallelize the loop
         with Pool(int(multiprocessing.cpu_count())) as pool:
             all_data = pool.starmap(process_row,
                                     [(i, dfdf, blacklist_mask, chromosome, chromosome_length, agg_function, bin_count)
                                      for i in range(dim)])
 
         # Concatenate the results into a final DataFrame
-        all_data_df = pd.concat(all_data)
+        all_data_df = pd.concat(all_data)'''
 
 
         ''''### Find the Union of all Non-zero Regions for CT_TF prediction and GS
@@ -201,10 +201,7 @@ class calculate_R2_pearson_spearman(object):
         all_data_df = pd.concat(all_data)
         '''
 
-
-        logging.info("Calculate R2")
-
-        quant_gold_arr = self.quant_goldstandard_array[self.blacklist_mask]
+        '''quant_gold_arr = self.quant_goldstandard_array[self.blacklist_mask]
         pred_arr = self.prediction_array[self.blacklist_mask]
 
         big_arr = np.array([quant_gold_arr, pred_arr])
@@ -255,37 +252,45 @@ class calculate_R2_pearson_spearman(object):
         print(self.filtered_quant_gold_arr.shape, self.filtered_quant_gold_arr)
         print(self.filtered_pred_arr.shape, self.filtered_pred_arr)
 
-        '''R2_score = r2_score(
-            self.quant_goldstandard_array[self.blacklist_mask],
-            self.prediction_array[self.blacklist_mask]
-            )'''
-
+        logging.info("Calculate R2")
         R2_score = r2_score(
             filtered_quant_gold_arr,
             filtered_pred_arr
             )
 
         logging.info("Calculate Pearson Correlation")
-        '''pearson_score, pearson_pval = pearsonr(
-            self.quant_goldstandard_array[self.blacklist_mask],
-            self.prediction_array[self.blacklist_mask]
-            )'''
-
         pearson_score, pearson_pval = pearsonr(
             filtered_quant_gold_arr,
             filtered_pred_arr
             )
 
         logging.info("Calculate Spearman Correlation")
-        '''spearman_score, spearman_pval = spearmanr(
-            self.quant_goldstandard_array[self.blacklist_mask],
-            self.prediction_array[self.blacklist_mask]
-            )'''
-
         spearman_score, spearman_pval = spearmanr(
             filtered_quant_gold_arr,
             filtered_pred_arr
+            )'''
+
+
+
+        logging.info("Calculate R2 All Regions")
+        R2_score = r2_score(
+                    self.quant_goldstandard_array[self.blacklist_mask],
+                    self.prediction_array[self.blacklist_mask]
+                    )
+
+        logging.info("Calculate Pearson Correlation All Regions")
+        pearson_score, pearson_pval = pearsonr(
+            self.quant_goldstandard_array[self.blacklist_mask],
+            self.prediction_array[self.blacklist_mask]
             )
+
+        logging.info("Calculate Spearman Correlation All Regions")
+        spearman_score, spearman_pval = spearmanr(
+            self.quant_goldstandard_array[self.blacklist_mask],
+            self.prediction_array[self.blacklist_mask]
+            )
+
+
 
         R2_Sp_P_df = pd.DataFrame([[R2_score, pearson_score, pearson_pval, spearman_score, spearman_pval]],
                                   columns=['R2', 'pearson', 'pearson_pval', 'spearman', 'spearman_pval'])
@@ -313,7 +318,7 @@ class calculate_R2_pearson_spearman(object):
         filtered_pred_arr = filtered_temp_df2.iloc[1].to_numpy()
         ###'''
 
-        filtered_quant_gold_arr = self.filtered_quant_gold_arr
+        '''filtered_quant_gold_arr = self.filtered_quant_gold_arr
         filtered_pred_arr = self.filtered_pred_arr
 
 
@@ -337,7 +342,7 @@ class calculate_R2_pearson_spearman(object):
         )
 
         plot_df_location = '_'.join([self.results_location.split(".")[0], "scatterPlot_df.tsv"])
-        plot_df.to_csv(plot_df_location, sep='\t', index=None)
+        plot_df.to_csv(plot_df_location, sep='\t', index=None)'''
 
 
 
