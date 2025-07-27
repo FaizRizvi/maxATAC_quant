@@ -420,12 +420,15 @@ class calculate_R2_pearson_spearman(object):
         )
 
         plot_df_location = '_'.join([self.results_location.split(".")[0], "scatterPlot_df.tsv"])
+
+        logging.info("Saving scatter plot_df")
         plot_df.to_csv(plot_df_location, sep='\t', index=None)
 
         R2_yisx_Slope_df = pd.DataFrame([[R2_yisx, m]],
                                   columns=['R2_yisx', 'Slope'])
         R2_yisx_Slope_df_location = "_".join(["_".join(self.results_location.split("_")[:-3]), "R2_yisx_Slope_df.tsv"])
 
+        logging.info("Saving R2_yisx")
         R2_yisx_Slope_df.to_csv(R2_yisx_Slope_df_location, sep='\t', index=None, float_format='%.6e')
 
 
