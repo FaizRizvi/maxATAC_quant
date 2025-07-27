@@ -130,6 +130,7 @@ class mse(tf.keras.losses.Loss):
         super().__init__(name=name)
 
     def call(self, y_true, y_pred):
+        print("value: ", tf.keras.losses.MSE(y_true,y_pred))
         return tf.keras.losses.MSE(y_true,y_pred)
 
 class multinomialnll(tf.keras.losses.Loss):

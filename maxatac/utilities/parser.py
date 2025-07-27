@@ -733,10 +733,10 @@ def get_parser():
                                   help="Quantitative Gold Standard file"
                                   )
 
-    benchmark_parser.add_argument("--pred_gs_meta",
-                                  dest="pred_gs_meta",
+    benchmark_parser.add_argument("--quant_gs_null",
+                                  dest="quant_gs_null",
                                   type=str,
-                                  help="Meta file of predictions and gold standards for correlation calculations"
+                                  help="Null quantitative gold standard file (average of all TF_CT bw files per TF)"
                                   )
 
     benchmark_parser.add_argument("--gold_standard",

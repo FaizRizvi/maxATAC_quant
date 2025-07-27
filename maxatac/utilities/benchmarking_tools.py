@@ -13,7 +13,7 @@ import pybedtools
 from multiprocessing import Pool
 import multiprocessing
 
-def process_row(i, dfdf, blacklist_mask, chromosome, chromosome_length, agg_function, bin_count):
+'''def process_row(i, dfdf, blacklist_mask, chromosome, chromosome_length, agg_function, bin_count):
     #load_pred = load_bigwig(dfdf.prediction[i])
     #pred_array = import_prediction_array_fn(load_pred, chromosome, chromosome_length, agg_function, bin_count)
 
@@ -29,7 +29,25 @@ def process_row(i, dfdf, blacklist_mask, chromosome, chromosome_length, agg_func
     big_arr = np.array([quant_gs_array_bl])
     temp_df = pd.DataFrame(data=big_arr)
 
-    return temp_df
+    return temp_df'''
+
+def calculate_sse(vector1, vector2):
+    """
+    Calculates the sum of squared errors (SSE) between two NumPy vectors.
+
+    Args:
+        vector1 (np.ndarray): The first vector.
+        vector2 (np.ndarray): The second vector.
+
+    Returns:
+        float: The sum of squared errors.
+    """
+    if vector1.shape != vector2.shape:
+        raise ValueError("Vectors must have the same shape.")
+
+    squared_differences = (vector1 - vector2) ** 2
+    sse = np.sum(squared_differences)
+    return sse
 
 class calculate_R2_pearson_spearman(object):
     """
@@ -52,7 +70,7 @@ class calculate_R2_pearson_spearman(object):
                  agg_function,
                  results_location,
                  blacklist_bw,
-                 pred_gs_meta
+                 quant_gs_null
                  ):
 
         """
@@ -63,6 +81,7 @@ class calculate_R2_pearson_spearman(object):
         self.prediction_stream = load_bigwig(prediction_bw)
         self.goldstandard_stream = load_bigwig(goldstandard_bw)
         self.quant_goldstandard_stream = load_bigwig(quant_goldstandard_bw)
+        self.quant_gs_null_stream = load_bigwig(quant_gs_null)
 
         self.chromosome = chromosome
         self.chromosome_length = self.goldstandard_stream.chroms(self.chromosome)
@@ -70,7 +89,7 @@ class calculate_R2_pearson_spearman(object):
         self.bin_count = int(int(self.chromosome_length) / int(bin_size))  # need to floor the number
         self.bin_size = bin_size
         self.agg_function = agg_function
-        self.pred_gs_meta = pred_gs_meta
+        self.quant_gs_null = quant_gs_null # change to quant_null_model
 
         # This has been modified
         self.blacklist_mask = chromosome_blacklist_mask(blacklist_bw,
@@ -88,6 +107,7 @@ class calculate_R2_pearson_spearman(object):
         self.__import_prediction_array__()
         self.__import_goldstandard_array__()
         self.__import_quant_goldstandard_array__()
+        self.__import_quant_goldstandard_null_array__()
         self.__R2_Sp_P__()
         self.__plot__()
 
@@ -153,6 +173,27 @@ class calculate_R2_pearson_spearman(object):
                                                          dtype=float  # need it to have NaN instead of None
                                                          )
                                                 ) # Commented out to keep values non-boolean:  > 0  # to convert to boolean array
+
+    def __import_quant_goldstandard_null_array__(self):
+        """
+        Import the chromosome signal from the gold standard null model bigwig file and convert to a numpy array.
+        """
+
+        logging.info("Import Quantitative Gold Standard Null Model as Array")
+        # prediction_chromosome_data = np.round(prediction_chromosome_data, round_predictions)
+
+        # Get the bin stats
+
+        self.quant_goldstandard_null_array = np.nan_to_num(np.array(self.quant_gs_null_stream.stats(self.chromosome,
+                                                                                                    0,
+                                                                                                    self.chromosome_length,
+                                                                                                    type=self.agg_function,
+                                                                                                    nBins=self.bin_count,
+                                                                                                    exact=True
+                                                                                                    ),
+                                                               dtype=float  # need it to have NaN instead of None
+                                                               )
+                                                      )  # Commented out to keep values non-boolean:  > 0  # to convert to boolean array
 
     def __R2_Sp_P__(self):
         """
@@ -272,19 +313,24 @@ class calculate_R2_pearson_spearman(object):
 
 
 
-        logging.info("Calculate R2 All Regions")
-        R2_score = r2_score(
-                    self.quant_goldstandard_array[self.blacklist_mask],
-                    self.prediction_array[self.blacklist_mask]
-                    )
 
-        logging.info("Calculate Pearson Correlation All Regions")
+        logging.info("Calculate R2_pred")
+        SSE_pred = calculate_sse(
+            self.quant_goldstandard_array[self.blacklist_mask],
+            self.prediction_array[self.blacklist_mask])
+        SSE_null = calculate_sse(
+            self.quant_goldstandard_array[self.blacklist_mask],
+            self.quant_goldstandard_null_array[self.blacklist_mask])
+        R2_pred = 1 - SSE_pred / SSE_null
+
+
+        logging.info("Calculate Pearson Correlation")
         pearson_score, pearson_pval = pearsonr(
             self.quant_goldstandard_array[self.blacklist_mask],
             self.prediction_array[self.blacklist_mask]
             )
 
-        logging.info("Calculate Spearman Correlation All Regions")
+        logging.info("Calculate Spearman Correlation")
         spearman_score, spearman_pval = spearmanr(
             self.quant_goldstandard_array[self.blacklist_mask],
             self.prediction_array[self.blacklist_mask]
@@ -292,49 +338,81 @@ class calculate_R2_pearson_spearman(object):
 
 
 
-        R2_Sp_P_df = pd.DataFrame([[R2_score, pearson_score, pearson_pval, spearman_score, spearman_pval]],
-                                  columns=['R2', 'pearson', 'pearson_pval', 'spearman', 'spearman_pval'])
+        R2_Sp_P_df = pd.DataFrame([[R2_pred, pearson_score, pearson_pval, spearman_score, spearman_pval]],
+                                  columns=['R2_pred', 'pearson', 'pearson_pval', 'spearman', 'spearman_pval'])
 
-        R2_Sp_P_df.to_csv(self.results_location, sep='\t', index=None)
+        R2_Sp_P_df.to_csv(self.results_location, sep='\t', index=None, float_format='%.6e')
 
     def __plot__(self):
 
-        '''###
-        quant_gold_arr = self.quant_goldstandard_array[self.blacklist_mask]
-        pred_arr = self.prediction_array[self.blacklist_mask]
+        ###
+        #quant_gold_arr = self.quant_goldstandard_array[self.blacklist_mask]
+        #pred_arr = self.prediction_array[self.blacklist_mask]
 
-        big_arr = np.array([quant_gold_arr, pred_arr])
-        temp_df = pd.DataFrame(data=big_arr)
+        #filtered_quant_gold_arr = self.filtered_quant_gold_arr
 
-        # locate cols with 0s to remove
+        #filtered_pred_arr = self.filtered_pred_arr
 
-        columns_to_drop = temp_df.columns[(temp_df.iloc[0] == 0)]
-        filtered_temp_df = temp_df.drop(columns=columns_to_drop)
+        # genomic coordinates
+        chr_region = pybedtools.BedTool(f"{self.chromosome}\t0\t{self.chromosome_length}\n", from_string=True)
+        chr_df = pybedtools.BedTool().window_maker(b=chr_region, w=self.bin_size).to_dataframe()
+        if chr_df.tail(1).end.to_numpy()[0] - chr_df.tail(1).start.to_numpy()[0] != self.bin_size:
+            chr_df = chr_df.drop(chr_df.index[-1])
+        else:
+            pass
+        plot_df = chr_df.loc[self.blacklist_mask]
 
-        columns_to_drop2 = filtered_temp_df.columns[(filtered_temp_df.iloc[1] == 0)]
-        filtered_temp_df2 = filtered_temp_df.drop(columns=columns_to_drop2)
+        y_pred= self.prediction_array[self.blacklist_mask]
+        y_obs= self.quant_goldstandard_array[self.blacklist_mask]
 
-        filtered_quant_gold_arr = filtered_temp_df2.iloc[0].to_numpy()
-        filtered_pred_arr = filtered_temp_df2.iloc[1].to_numpy()
-        ###'''
+        plot_df['y_pred'] = y_pred
+        plot_df['y_obs'] = y_obs
 
-        '''filtered_quant_gold_arr = self.filtered_quant_gold_arr
-        filtered_pred_arr = self.filtered_pred_arr
-
-
-
-        y_pred= filtered_pred_arr #self.prediction_array[self.blacklist_mask]
-        y_obs= filtered_quant_gold_arr #self.quant_goldstandard_array[self.blacklist_mask]
-
-        data={'y_obs': y_obs, 'y_pred': y_pred}
-        plot_df=pd.DataFrame(data)
-
-        #Drop Rows containing 0s
-        plot_df = plot_df[plot_df.y_obs != 0]
-        plot_df = plot_df[plot_df.y_pred != 0]
-
+        # plotting figure
         fig, ax = plt.subplots()
-        ax.scatter(plot_df.y_obs, plot_df.y_pred)
+        x = plot_df.y_obs
+        y = plot_df.y_pred
+
+        # Fit a line of best fit
+        (m, b), (SSE,), *_ = np.polyfit(x, y, deg=1, full=True)
+        # set y-intercept = 0
+        b=0
+        from matplotlib.ticker import MaxNLocator
+        import matplotlib.ticker as ticker
+
+        # Generate values for the line of best fit
+        xseq = np.linspace(min(x) - 1, max(x) + 1, num=100)
+        ax.plot(xseq, m * xseq + b, color='r', lw=2.5, label=f'Best Fit: y = {m:.2f}x + {b:.2f}\nSSE = {SSE:.2f}')
+
+        ax.yaxis.set_major_locator(MaxNLocator(integer=True))
+        ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+        ax.xaxis.set_major_locator(ticker.MultipleLocator(1))
+        ax.yaxis.set_major_locator(ticker.MultipleLocator(1))
+
+        # line y=x
+        plt.plot(xseq, xseq, label='y=x', color='lightgray')
+
+        fit_y = m * xseq + b
+        line_y = xseq
+
+        # Calculate R2_(y=x) (R2 between the line of best and the line y=x y-values)
+        R2_yisx = r2_score(line_y, fit_y)
+
+        ax.scatter(x, y, s=60, alpha=0.0020, label='Data points')
+
+        plt.title("Observed vs Predicted Scatter" + '\n \n')
+        plt.xlabel("Observed", size=20)
+        plt.ylabel("Predicted", size=20)
+
+        plt.grid(True, linestyle='-', color='gray', alpha=0.5)
+        plt.xticks(size=18)
+        plt.yticks(size=18)
+
+        plt.minorticks_on()
+        plt.grid(which='minor', linestyle=':', linewidth='0.5', color='grey')
+        plt.grid(which='major', linestyle='-', linewidth='1', color='grey', alpha=.6)
+
+
         plot_location='_'.join([self.results_location.split(".")[0], "scatterPlot.png"])
 
         fig.savefig(plot_location,
@@ -342,7 +420,13 @@ class calculate_R2_pearson_spearman(object):
         )
 
         plot_df_location = '_'.join([self.results_location.split(".")[0], "scatterPlot_df.tsv"])
-        plot_df.to_csv(plot_df_location, sep='\t', index=None)'''
+        plot_df.to_csv(plot_df_location, sep='\t', index=None)
+
+        R2_yisx_Slope_df = pd.DataFrame([[R2_yisx, m]],
+                                  columns=['R2_yisx', 'Slope'])
+        R2_yisx_Slope_df_location = "_".join(["_".join(self.results_location.split("_")[:-3]), "R2_yisx_Slope_df.tsv"])
+
+        R2_yisx_Slope_df.to_csv(R2_yisx_Slope_df_location, sep='\t', index=None, float_format='%.6e')
 
 
 
@@ -555,59 +639,6 @@ class ChromosomeAUPRC(object):
 
         # Write the AUPRC stats to a dataframe
         self.PR_CURVE_DF.to_csv(self.results_location, sep="\t", header=True, index=False)
-
-
-        # Calculate R2, Spearman, Pearson for Binary
-
-        gold_arr = self.goldstandard_array[self.blacklist_mask]
-        pred_arr = self.prediction_array[self.blacklist_mask]
-
-        logging.info("Calculate R2, Pearson, and Spearman Correlation for Binary Preds")
-
-        R2_score = r2_score(
-        gold_arr,
-        pred_arr
-        )
-
-        pearson_score, pearson_pval = pearsonr(
-        gold_arr,
-        pred_arr
-        )
-
-        spearman_score, spearman_pval = spearmanr(
-        gold_arr,
-        pred_arr
-        )
-
-        R2_Sp_P_df = pd.DataFrame([[R2_score, pearson_score, pearson_pval, spearman_score, spearman_pval]],
-        columns = ['R2', 'pearson', 'pearson_pval', 'spearman', 'spearman_pval'])
-
-        results_filename_2 = "_".join(["_".join(self.results_location.split("_")[:-1]),  "_r2_pearson_spearman_binary_preds.tsv"])
-
-        R2_Sp_P_df.to_csv(results_filename_2, sep='\t', index=None)
-
-        # plot
-
-        y_pred = pred_arr
-        y_obs = gold_arr
-
-        data = {'y_obs': y_obs, 'y_pred': y_pred}
-        plot_df = pd.DataFrame(data)
-
-        # Drop Rows containing 0s
-        plot_df = plot_df[plot_df.y_obs != 0]
-        plot_df = plot_df[plot_df.y_pred != 0]
-
-        fig, ax = plt.subplots()
-        ax.scatter(plot_df.y_obs, plot_df.y_pred)
-        plot_location = "_".join(["_".join(self.results_location.split("_")[:-1]), "scatterPlot.png"])
-
-        fig.savefig(plot_location,
-                    bbox_inches="tight"
-                    )
-
-        plot_df_location = "_".join(["_".join(self.results_location.split("_")[:-1]), "scatterPlot_df.tsv"])
-        plot_df.to_csv(plot_df_location, sep='\t', index=None)
 
 
     def __plot(self, cmap="viridis"):
