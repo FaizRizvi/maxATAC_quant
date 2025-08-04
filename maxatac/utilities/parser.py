@@ -200,6 +200,13 @@ def get_parser():
                                 help="Logging level. Default: " + DEFAULT_LOG_LEVEL
                                 )
 
+    average_parser.add_argument("--decimal_points",
+                                dest="decimal_points",
+                                type=int,
+                                default=2,
+                                help="For quant file averaging, this parameter will round all values to the set value of decimals."
+                                )
+
     #############################################
     # Predict subparser
     #############################################

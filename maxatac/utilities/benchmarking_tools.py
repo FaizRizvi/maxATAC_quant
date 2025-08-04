@@ -13,6 +13,23 @@ import pybedtools
 from multiprocessing import Pool
 import multiprocessing
 
+
+def Precision_for_Recall(df, percent_recall):
+    percent_recall = percent_recall
+
+    upper_lim_recall = df.iloc[(df['Recall'] - percent_recall).abs().argsort()[:2]].Recall.tolist()[0]
+    lower_lim_recall = df.iloc[(df['Recall'] - percent_recall).abs().argsort()[:2]].Recall.tolist()[1]
+
+    upper_lim_precision = df.iloc[(df['Recall'] - percent_recall).abs().argsort()[:2]].Precision.tolist()[0]
+    lower_lim_precision = df.iloc[(df['Recall'] - percent_recall).abs().argsort()[:2]].Precision.tolist()[1]
+
+    val = (upper_lim_precision * abs(percent_recall - upper_lim_recall) + lower_lim_precision * abs(
+        percent_recall - lower_lim_recall)) / 2
+
+    sp_precision = lower_lim_precision + val
+
+    return sp_precision
+
 '''def process_row(i, dfdf, blacklist_mask, chromosome, chromosome_length, agg_function, bin_count):
     #load_pred = load_bigwig(dfdf.prediction[i])
     #pred_array = import_prediction_array_fn(load_pred, chromosome, chromosome_length, agg_function, bin_count)
@@ -368,6 +385,8 @@ class calculate_R2_pearson_spearman(object):
         plot_df['y_pred'] = y_pred
         plot_df['y_obs'] = y_obs
 
+        logging.info("Creating Scatterplot")
+
         # plotting figure
         fig, ax = plt.subplots()
         x = plot_df.y_obs
@@ -415,13 +434,16 @@ class calculate_R2_pearson_spearman(object):
 
         plot_location='_'.join([self.results_location.split(".")[0], "scatterPlot.png"])
 
+        logging.info("Saving Scatterplot")
+
         fig.savefig(plot_location,
             bbox_inches="tight"
         )
 
+        logging.info("Saving Scatterplot DF")
+
         plot_df_location = '_'.join([self.results_location.split(".")[0], "scatterPlot_df.tsv"])
 
-        logging.info("Saving scatter plot_df")
         plot_df.to_csv(plot_df_location, sep='\t', index=None)
 
         R2_yisx_Slope_df = pd.DataFrame([[R2_yisx, m]],
@@ -637,6 +659,9 @@ class ChromosomeAUPRC(object):
 
         # Log2FC
         self.PR_CURVE_DF['log2FC_AUPRC_Random_AUPRC'] = np.log2(self.PR_CURVE_DF["AUPRC"] / self.PR_CURVE_DF["Random_AUPRC"])
+
+        # Precision at 10% Recall
+        self.PR_CURVE_DF['Precision_at_10_Percent_Recall']=Precision_for_Recall(self.PR_CURVE_DF, 0.1)
 
         logging.info("Write results for " + self.chromosome)
 
