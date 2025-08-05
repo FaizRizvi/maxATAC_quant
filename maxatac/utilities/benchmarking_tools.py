@@ -377,13 +377,23 @@ class calculate_R2_pearson_spearman(object):
             chr_df = chr_df.drop(chr_df.index[-1])
         else:
             pass
-        plot_df = chr_df.loc[self.blacklist_mask]
+        chr_df_filt = chr_df.loc[self.blacklist_mask]
+        #plot_df = chr_df.loc[self.blacklist_mask]
 
         y_pred= self.prediction_array[self.blacklist_mask]
         y_obs= self.quant_goldstandard_array[self.blacklist_mask]
 
-        plot_df['y_pred'] = y_pred
-        plot_df['y_obs'] = y_obs
+        #plot_df['y_pred'] = y_pred
+        #plot_df['y_obs'] = y_obs
+
+        pred_obs_data = {'y_pred': y_pred, 'y_obs': y_obs}
+        pred_obs_df = pd.DataFrame(pred_obs_data)
+
+        # Reset index
+        chr_df_filt.reset_index(drop=True, inplace=True)
+        pred_obs_df.reset_index(drop=True, inplace=True)
+
+        plot_df = pd.concat([chr_df_filt, pred_obs_df], axis=1)
 
         logging.info("Creating Scatterplot")
 
