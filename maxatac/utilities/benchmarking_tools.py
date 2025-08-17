@@ -30,24 +30,6 @@ def Precision_for_Recall(df, percent_recall):
 
     return sp_precision
 
-'''def process_row(i, dfdf, blacklist_mask, chromosome, chromosome_length, agg_function, bin_count):
-    #load_pred = load_bigwig(dfdf.prediction[i])
-    #pred_array = import_prediction_array_fn(load_pred, chromosome, chromosome_length, agg_function, bin_count)
-
-    load_quant_gs = load_bigwig(dfdf.gold_standard[i])
-    quant_gs_array = import_quant_goldstandard_array_fn(load_quant_gs, chromosome, chromosome_length,
-                                                        agg_function, bin_count)
-
-    #pred_array_bl = pred_array[blacklist_mask]
-    quant_gs_array_bl = quant_gs_array[blacklist_mask]
-
-    #big_arr = np.array([quant_gs_array_bl, pred_array_bl])
-
-    big_arr = np.array([quant_gs_array_bl])
-    temp_df = pd.DataFrame(data=big_arr)
-
-    return temp_df'''
-
 def calculate_sse(vector1, vector2):
     """
     Calculates the sum of squared errors (SSE) between two NumPy vectors.
@@ -225,111 +207,6 @@ class calculate_R2_pearson_spearman(object):
         agg_function = self.agg_function  # Assuming this is a member variable
         bin_count = self.bin_count  # Assuming this is a member variable
 
-        ''''# Using Pool to parallelize the loop
-        with Pool(int(multiprocessing.cpu_count())) as pool:
-            all_data = pool.starmap(process_row,
-                                    [(i, dfdf, blacklist_mask, chromosome, chromosome_length, agg_function, bin_count)
-                                     for i in range(dim)])
-
-        # Concatenate the results into a final DataFrame
-        all_data_df = pd.concat(all_data)'''
-
-
-        ''''### Find the Union of all Non-zero Regions for CT_TF prediction and GS
-        dfdf = pd.read_csv(self.pred_gs_meta, sep='\t')
-        dim = dfdf.shape[0]
-
-        all_data=[]
-        for i in range(dim):
-
-            load_pred = load_bigwig(dfdf.prediction[i])
-            pred_array = import_prediction_array_fn(load_pred, self.chromosome, self.chromosome_length, self.agg_function,
-                                    self.bin_count)
-
-            load_quant_gs = load_bigwig(dfdf.gold_standard[i])
-            quant_gs_array = import_quant_goldstandard_array_fn(load_quant_gs, self.chromosome, self.chromosome_length, self.agg_function, self.bin_count)
-
-            pred_array_bl = pred_array[self.blacklist_mask]
-            quant_gs_array_bl = quant_gs_array[self.blacklist_mask]
-
-            big_arr = np.array([quant_gs_array_bl, pred_array_bl])
-            temp_df = pd.DataFrame(data=big_arr)
-            all_data.append(temp_df)
-
-        all_data_df = pd.concat(all_data)
-        '''
-
-        '''quant_gold_arr = self.quant_goldstandard_array[self.blacklist_mask]
-        pred_arr = self.prediction_array[self.blacklist_mask]
-
-        big_arr = np.array([quant_gold_arr, pred_arr])
-        temp_df = pd.DataFrame(data=big_arr)
-
-        # Filtering by all LFC preds greater than 1
-        # these are all bins that have value greater than 1 in LFC pred returns true false bool series
-        # create a mask
-        m1 = temp_df.loc[1] > 1
-        mm = ~m1 # complement, all regions that are <= 1
-
-        # finds all bins with a 0 to exclude
-        m2 = (all_data_df == 0).any()
-
-        cols_to_drop = mm & m2 # this mask corresponds to all bins that have 0s in the all_data_df and all LFC <= 1 to be removed
-
-
-
-        # Vertically concat temp_df (quant_gold arr and pred_array of interest) with all the quant gs and preds df in all_data_df
-        big_data_df = pd.concat([temp_df, all_data_df], ignore_index=True)
-
-        # this was the old way to filter # locate cols with 0s to remove
-        # Upgrading the way we filter 0s # cols_to_drop = (big_data_df == 0).any()
-
-        filtered_big_data_df = big_data_df.loc[:, ~cols_to_drop]
-
-        tot_bins_print=big_data_df.shape[1]
-        tot_bins_drop_print=cols_to_drop[cols_to_drop == True].shape[0]
-        tot_bins_after_filter_print=filtered_big_data_df.shape[1]
-
-        logging.info(f"Total bins: {tot_bins_print}")
-        logging.info(f"Total bins removed: {tot_bins_drop_print}")
-        logging.info(f"Total bins after filtering: {tot_bins_after_filter_print}")
-
-        # locate cols with 0s to remove
-        # columns_to_drop = temp_df.columns[(temp_df.iloc[0] == 0)]
-        # filtered_temp_df = temp_df.drop(columns=columns_to_drop)
-
-        # columns_to_drop2 = filtered_temp_df.columns[(filtered_temp_df.iloc[1] == 0)]
-        # filtered_temp_df2 = filtered_temp_df.drop(columns=columns_to_drop2)
-
-        filtered_quant_gold_arr = filtered_big_data_df.iloc[0].to_numpy()
-        filtered_pred_arr = filtered_big_data_df.iloc[1].to_numpy()
-
-        self.filtered_quant_gold_arr = filtered_quant_gold_arr
-        self.filtered_pred_arr = filtered_pred_arr
-
-        print(self.filtered_quant_gold_arr.shape, self.filtered_quant_gold_arr)
-        print(self.filtered_pred_arr.shape, self.filtered_pred_arr)
-
-        logging.info("Calculate R2")
-        R2_score = r2_score(
-            filtered_quant_gold_arr,
-            filtered_pred_arr
-            )
-
-        logging.info("Calculate Pearson Correlation")
-        pearson_score, pearson_pval = pearsonr(
-            filtered_quant_gold_arr,
-            filtered_pred_arr
-            )
-
-        logging.info("Calculate Spearman Correlation")
-        spearman_score, spearman_pval = spearmanr(
-            filtered_quant_gold_arr,
-            filtered_pred_arr
-            )'''
-
-
-
 
         logging.info("Calculate R2_pred")
         SSE_pred = calculate_sse(
@@ -362,14 +239,6 @@ class calculate_R2_pearson_spearman(object):
 
     def __plot__(self):
 
-        ###
-        #quant_gold_arr = self.quant_goldstandard_array[self.blacklist_mask]
-        #pred_arr = self.prediction_array[self.blacklist_mask]
-
-        #filtered_quant_gold_arr = self.filtered_quant_gold_arr
-
-        #filtered_pred_arr = self.filtered_pred_arr
-
         # genomic coordinates
         chr_region = pybedtools.BedTool(f"{self.chromosome}\t0\t{self.chromosome_length}\n", from_string=True)
         chr_df = pybedtools.BedTool().window_maker(b=chr_region, w=self.bin_size).to_dataframe()
@@ -378,13 +247,10 @@ class calculate_R2_pearson_spearman(object):
         else:
             pass
         chr_df_filt = chr_df.loc[self.blacklist_mask]
-        #plot_df = chr_df.loc[self.blacklist_mask]
 
         y_pred= self.prediction_array[self.blacklist_mask]
         y_obs= self.quant_goldstandard_array[self.blacklist_mask]
 
-        #plot_df['y_pred'] = y_pred
-        #plot_df['y_obs'] = y_obs
 
         pred_obs_data = {'y_pred': y_pred, 'y_obs': y_obs}
         pred_obs_df = pd.DataFrame(pred_obs_data)

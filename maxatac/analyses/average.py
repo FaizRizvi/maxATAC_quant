@@ -78,7 +78,7 @@ def run_averaging(args):
             chrom_vals = chrom_vals / number_input_bigwigs
 
             if args.quant:
-                chrom_vals = round(chrom_vals, args.decimal_points)
+                chrom_vals = np.round(chrom_vals, args.decimal_points)
 
             logging.info(f"Writing average values for chromosome: {chrom_name}")
 
